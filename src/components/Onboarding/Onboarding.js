@@ -209,7 +209,4 @@ class Onboarding extends Component {
   }
 }
 let reset = Onboarding.reset
-exports.default = {
-	Onboarding: withStyles(styles, { withTheme: true })(Onboarding),
-	reset: reset
-} 
+export default withStyles(styles, { withTheme: true })(Onboarding)
