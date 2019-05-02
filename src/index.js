@@ -1,22 +1,6 @@
-import React, { Component } from 'react'
-import PropTypes from 'prop-types'
+var _Onboarding = require("./components/Onboarding/Onboarding")
+var _OnboardingItem = require("./components/Onboarding/OnboardingItem")
 
-import styles from './styles.css'
-
-export default class ExampleComponent extends Component {
-  static propTypes = {
-    text: PropTypes.string
-  }
-
-  render() {
-    const {
-      text
-    } = this.props
-
-    return (
-      <div className={styles.test}>
-        Example Component: {text}
-      </div>
-    )
-  }
-}
+module.exports.Onboarding = _Onboarding.Onboarding
+module.exports.reset = _Onboarding.reset
+module.exports.OnboardingItem = _OnboardingItem
