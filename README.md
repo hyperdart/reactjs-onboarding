@@ -4,6 +4,9 @@
 
 [![NPM](https://img.shields.io/npm/v/reactjs-onboarding.svg)](https://www.npmjs.com/package/reactjs-onboarding) [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
 
+
+![grab-landing-page](https://media.giphy.com/media/YN8UDTHmFJ4JvSYZF7/giphy.gif)
+
 ## Install
 
 You can obtain your local copy of reactjs-onboarding.js from:
@@ -15,24 +18,12 @@ You can obtain your local copy of reactjs-onboarding.js from:
 
 ## Usage
 
-```jsx
 
-import React, { Component } from 'react'
-
-import MyComponent from 'reactjs-onboarding'
-
-class Example extends Component {
-  render () {
-    return (
-      <MyComponent />
-    )
-  }
-}
-```
-reactjs-onboarding.js can be added to your site in three simple steps:
+reactjs-onboarding.js can be added to your project in three simple steps:
 
 
-**1)** Include named imports of `Onboarding.js` and `OnboardingItem.js` in your page.
+
+**1)** Include named imports of `Onboarding.js` and `OnboardingItem.js` in your page
 For example:
 
 ```jsx
@@ -66,4 +57,4 @@ For example:
 
 ## License
 
-MIT © [](https://github.com/)
+MIT ï¿½ [](https://github.com/)
