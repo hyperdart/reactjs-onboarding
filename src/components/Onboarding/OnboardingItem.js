@@ -17,13 +17,31 @@ class OnboardingItem extends Component {
 
     constructor(props) {
         super(props);
+        // console.log(props);
+       
+        var coordinate
+        if(typeof props.elementCoOrdinate == "string"){
+        document.getElementById(props.elementCoOrdinate).style.boxShadow="0 0 0 9999px rgba(0, 0, 0, 0.8)"
+        document.getElementById(props.elementCoOrdinate).style.border="2px solid white"
+        document.getElementById(props.elementCoOrdinate).style.borderRadius="5px"
+        coordinate = document.getElementById(props.elementCoOrdinate).getBoundingClientRect()
+    }
+        else{
+         props.elementCoOrdinate.style.boxShadow="0 0 0 9999px rgba(0, 0, 0, 0.8)"
+        props.elementCoOrdinate.style.border="2px solid white"
+        props.elementCoOrdinate.style.borderRadius="5px"
+        coordinate = props.elementCoOrdinate.getBoundingClientRect()
+
+        }
+        // coordinate.left = coordinate.top = coordinate.width = coordinate.height = 0 
+        // console.log(props);
         this.state = {
             innerHeight: window.innerHeight,
             innerWidth: window.innerWidth,
-            elementToPointLeft: this.props.elementCoOrdinate.left,
-            elementToPointTop: this.props.elementCoOrdinate.top,
-            elementToPointWidth: this.props.elementCoOrdinate.width,
-            elementToPointHeight: this.props.elementCoOrdinate.height,
+            elementToPointLeft: coordinate.left,
+            elementToPointTop: coordinate.top,
+            elementToPointWidth: coordinate.width,
+            elementToPointHeight: coordinate.height,
             flipX: 0,
             flipY: 0,
             arrowPositionLeft: 0,
@@ -34,40 +52,85 @@ class OnboardingItem extends Component {
     }
 
     componentDidMount() {
+        var coordinate
+        if(typeof this.props.elementCoOrdinate == "string"){
+            document.getElementById(this.props.elementCoOrdinate).style.boxShadow="0 0 0 9999px rgba(0, 0, 0, 0.8)"
+        document.getElementById(this.props.elementCoOrdinate).style.border="2px solid white"
+        document.getElementById(this.props.elementCoOrdinate).style.borderRadius="5px"
+        coordinate = document.getElementById(this.props.elementCoOrdinate).getBoundingClientRect()
+        }
+        else{
+            this.props.elementCoOrdinate.style.boxShadow="0 0 0 9999px rgba(0, 0, 0, 0.8)"
+            this.props.elementCoOrdinate.style.border="2px solid white"
+            this.props.elementCoOrdinate.style.borderRadius="5px"
+        coordinate = this.props.elementCoOrdinate.getBoundingClientRect()
+
+        }
+        // var coordinate = document.getElementById(this.props.elementCoOrdinate).getBoundingClientRect()
         if (document.getElementById("arrow") !== null) {
             this.setState({
                 arrowWidth: document.getElementById("arrow").getBoundingClientRect().width,
                 arrowHeight: document.getElementById("arrow").getBoundingClientRect().height,
-                elementToPointLeft: this.props.elementCoOrdinate.left,
-                elementToPointTop: this.props.elementCoOrdinate.top,
-                elementToPointWidth: this.props.elementCoOrdinate.width,
-                elementToPointHeight: this.props.elementCoOrdinate.height
+                elementToPointLeft: coordinate.left,
+                elementToPointTop: coordinate.top,
+                elementToPointWidth: coordinate.width,
+                elementToPointHeight: coordinate.height
             }, () => {
-                this.calculateArrowPosition(this.state.elementToPointLeft, this.state.elementToPointTop, this.state.elementToPointWidth / 2, this.state.elementToPointHeight / 1.05, this.state.innerWidth / 2, this.state.innerHeight / 2, this.state.arrowWidth, this.state.arrowHeight);
+                this.calculateArrowPosition(this.state.elementToPointLeft, this.state.elementToPointTop, this.state.elementToPointWidth , this.state.elementToPointHeight / 1.05, this.state.innerWidth / 2, this.state.innerHeight / 2, this.state.arrowWidth, this.state.arrowHeight);
             })
         }
     }
 
     componentDidUpdate(prevProp, prevState) {
+        if(prevProp.elementCoOrdinate !== this.props.elementCoOrdinate){
+            if(typeof prevProp.elementCoOrdinate == "string"){
+                document.getElementById(prevProp.elementCoOrdinate).style.boxShadow="none"
+                document.getElementById(prevProp.elementCoOrdinate).style.border="none"
+                document.getElementById(prevProp.elementCoOrdinate).style.borderRadius="0"
+            }
+            else{
+                prevProp.elementCoOrdinate.style.boxShadow="none"
+                prevProp.elementCoOrdinate.style.border="none"
+                prevProp.elementCoOrdinate.style.borderRadius="0"
+    
+            }
+           
+
+        }
+        var coordinate
+        if(typeof this.props.elementCoOrdinate == "string"){
+            document.getElementById(this.props.elementCoOrdinate).style.boxShadow="0 0 0 9999px rgba(0, 0, 0, 0.8)"
+        document.getElementById(this.props.elementCoOrdinate).style.border="2px solid white"
+        document.getElementById(this.props.elementCoOrdinate).style.borderRadius="5px"
+        coordinate = document.getElementById(this.props.elementCoOrdinate).getBoundingClientRect()
+        }
+        else{
+            this.props.elementCoOrdinate.style.boxShadow="0 0 0 9999px rgba(0, 0, 0, 0.8)"
+            this.props.elementCoOrdinate.style.border="2px solid white"
+            this.props.elementCoOrdinate.style.borderRadius="5px"
+        coordinate = this.props.elementCoOrdinate.getBoundingClientRect()
+
+        }
+        // var coordinate = document.getElementById(this.  props.elementCoOrdinate).getBoundingClientRect()
         if (prevProp !== this.props && document.getElementById("arrow") !== null) {
             this.setState({
                 arrowWidth: document.getElementById("arrow").getBoundingClientRect().width,
                 arrowHeight: document.getElementById("arrow").getBoundingClientRect().height,
-                elementToPointLeft: this.props.elementCoOrdinate.left,
-                elementToPointTop: this.props.elementCoOrdinate.top,
-                elementToPointWidth: this.props.elementCoOrdinate.width,
-                elementToPointHeight: this.props.elementCoOrdinate.height
+                elementToPointLeft: coordinate.left,
+                elementToPointTop: coordinate.top,
+                elementToPointWidth: coordinate.width,
+                elementToPointHeight: coordinate.height
             }, () => {
-                this.calculateArrowPosition(this.state.elementToPointLeft, this.state.elementToPointTop, this.state.elementToPointWidth / 2, this.state.elementToPointHeight / 2, this.state.innerWidth / 2, this.state.innerHeight / 2, this.state.arrowWidth, this.state.arrowHeight);
+                this.calculateArrowPosition(this.state.elementToPointLeft, this.state.elementToPointTop, this.state.elementToPointWidth , this.state.elementToPointHeight / 2, this.state.innerWidth / 2, this.state.innerHeight / 2, this.state.arrowWidth, this.state.arrowHeight);
             })
         }
     }
 
     calculateArrowPosition = (elementToPointLeft, elementToPointTop, elementToPointWidth, elementToPointHeight, innerWidth, innerHeight, arrowWidth, arrowHeight) => {
         if (this.state.elementToPointTop < innerHeight && elementToPointLeft > innerWidth) {
-            // console.log('Q1')
+            console.log('Q1',arrowWidth)
             this.setState({
-                arrowPositionLeft: elementToPointLeft + elementToPointWidth - arrowWidth,
+                arrowPositionLeft: elementToPointLeft - arrowWidth,
                 arrowPositionTop: elementToPointTop + elementToPointHeight,
                 // flipX: 0,
                 // flipY: 0
@@ -76,7 +139,7 @@ class OnboardingItem extends Component {
             })
         }
         else if (elementToPointTop < innerHeight && elementToPointLeft < innerWidth) {
-            // console.log('Q2')
+            console.log('Q2')
             if(elementToPointLeft + elementToPointWidth < arrowWidth ){
                 this.setState({
                     arrowPositionLeft: elementToPointLeft + elementToPointWidth,
@@ -100,7 +163,7 @@ class OnboardingItem extends Component {
 
         }
         else if (elementToPointTop > innerHeight && elementToPointLeft < innerWidth) {
-            // console.log('Q3')
+            console.log('Q3')
             if(elementToPointLeft - elementToPointWidth < arrowWidth ){
                 this.setState({
                     arrowPositionLeft: elementToPointLeft + elementToPointWidth,
@@ -114,7 +177,7 @@ class OnboardingItem extends Component {
             else
             {
                 this.setState({
-                    arrowPositionLeft: elementToPointLeft - elementToPointWidth - arrowWidth,
+                    arrowPositionLeft: elementToPointLeft  - arrowWidth,
                     arrowPositionTop: elementToPointTop - elementToPointHeight ,
                     // flipX: 180,
                     // flipY: 180
@@ -126,9 +189,9 @@ class OnboardingItem extends Component {
 
         }
         else if (elementToPointTop > innerHeight && elementToPointLeft > innerWidth) {
-            // console.log('Q4')
+            console.log('Q4')
             this.setState({
-                arrowPositionLeft: elementToPointLeft + elementToPointWidth - arrowWidth,
+                arrowPositionLeft: elementToPointLeft - arrowWidth,
                 arrowPositionTop: elementToPointTop - elementToPointHeight ,
                 // flipX: 180,
                 // flipY: 0
@@ -148,7 +211,6 @@ class OnboardingItem extends Component {
             })
         }
     }
-
     render() {
         // let angle1 = Math.abs(Math.atan((innerHeight / 2 - y) / (innerWidth / 2 - x)));
         // let angle = (angle1 * 180 / Math.PI)

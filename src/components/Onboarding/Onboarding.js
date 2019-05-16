@@ -46,28 +46,33 @@ const styles = theme => ({
     // },
   },
   backdrop:{
-    backgroundColor:"rgba(0, 0, 0, 0.69)"
+    backgroundColor:"rgba(0, 0, 0, 0.69)",
+    opacity:"0.1 !important"
   }
 })
 
 class Onboarding extends Component {
   constructor(props) {
     super(props);
+    console.log(props);
+    // console.log(props,document.getElementById(props.children.props.elementCoOrdinate).getBoundingClientRect());
+    
     let demoFlag = localStorage.getItem("_demo" + this.props.name)
-    // console.log(demoFlag);
+    // console.log(React.Children.toArray(this.props.children)[0]);
 
     this.state = {
       activeStep: 0,
       open: demoFlag === null || demoFlag === "" ? true : false,
       step: React.Children.count(this.props.children),
-      children: React.Children.toArray(this.props.children)
+      children: React.Children.toArray(this.props.children),
+      visible : this.props.visible && React.Children.toArray(this.props.children)[0].props.elementCoOrdinate
     }
-    // console.log(isArray (this.state.children));
 
   }
 
+
   componentDidMount() {
-    // console.log("did m");
+    console.log(this.state.open)
 
     let childrens = [];
     let x
@@ -89,7 +94,12 @@ class Onboarding extends Component {
     })
   }
   componentDidUpdate(prevProps, prevState) {
-    // console.log("did update");
+    // // // console.log("did update");
+    // console.log(React.Children.toArray(this.props.children) );
+
+    if(prevProps.visible === this.props.visible)  return
+    let visible = this.props.visible && React.Children.toArray(this.props.children)[0].props.elementCoOrdinate 
+    if(!visible)  return
 
     let demoFlag = localStorage.getItem("_demo" + this.props.name)
     // console.log(demoFlag);
@@ -105,23 +115,25 @@ class Onboarding extends Component {
       this.setState({ open: true })
     }
     if (prevProps !== this.props) {
-      let childrens = [];
-      let x
-      React.Children.map(this.props.children, (child, i) => {
+    let childrens = [];
+    let x
+    React.Children.map(this.props.children, (child, i) => {
 
-        if (child.props.elementCoOrdinate !== "") {
-          // console.log("if");
+      if (child.props.elementCoOrdinate !== "") {
+        // console.log("if");
 
-          childrens.push(child);
-        }
-        x = childrens.length;
-        return childrens.length;
-      });
-      this.setState({ step: x, children: childrens }, () => {
-      })
-    }
+        childrens.push(child);
+      }
+      x = childrens.length;
+      return childrens.length;
+    });
+    this.setState({ 
+      step: x, 
+      children: childrens,
+      visible
+    })
   }
-
+  }
   static reset() {
     for (let obj in localStorage) {
       if (obj.startsWith("_demo")) {
@@ -131,8 +143,21 @@ class Onboarding extends Component {
   }
 
   handleClose = () => {
-    // console.log(this.state.step);
+    console.log(this.state.activeStep);
+    
+    console.log(React.Children.toArray(this.props.children[this.state.activeStep]));
+    
+    if(typeof React.Children.toArray(this.props.children)[this.state.activeStep].props.elementCoOrdinate == "string"){
+      document.getElementById(React.Children.toArray(this.props.children)[this.state.activeStep].props.elementCoOrdinate).style.boxShadow="none"
+      document.getElementById(React.Children.toArray(this.props.children)[this.state.activeStep].props.elementCoOrdinate).style.border="none"
+      document.getElementById(React.Children.toArray(this.props.children)[this.state.activeStep].props.elementCoOrdinate).style.borderRadius="0"
+  }
+  else{
+      React.Children.toArray(this.props.children)[this.state.activeStep].props.elementCoOrdinate.style.boxShadow="none"
+      React.Children.toArray(this.props.children)[this.state.activeStep].props.elementCoOrdinate.style.border="none"
+      React.Children.toArray(this.props.children)[this.state.activeStep].props.elementCoOrdinate.style.borderRadius="0"
 
+  }
     this.setState({ open: false });
     this.setState({ activeStep: 0 });
     localStorage.setItem("_demo" + this.props.name, true)
@@ -145,6 +170,21 @@ class Onboarding extends Component {
       })
       this.setState({ activeStep: 0 });
       localStorage.setItem("_demo" + this.props.name, true)
+
+      if(typeof React.Children.toArray(this.props.children)[this.state.children.length - 1].props.elementCoOrdinate == "string"){
+        
+        document.getElementById(React.Children.toArray(this.props.children)[this.state.children.length - 1].props.elementCoOrdinate).style.boxShadow="none"
+        document.getElementById(React.Children.toArray(this.props.children)[this.state.children.length - 1].props.elementCoOrdinate).style.border="none"
+        document.getElementById(React.Children.toArray(this.props.children)[this.state.children.length - 1].props.elementCoOrdinate).style.borderRadius="0"
+    }
+    else{
+        React.Children.toArray(this.props.children)[this.state.children.length - 1].props.elementCoOrdinate.style.boxShadow="none"
+        React.Children.toArray(this.props.children)[this.state.children.length - 1].props.elementCoOrdinate.style.border="none"
+        React.Children.toArray(this.props.children)[this.state.children.length - 1].props.elementCoOrdinate.style.borderRadius="0"
+  
+    }
+
+
     }
     else {
       this.setState(prevState => ({
@@ -162,17 +202,17 @@ class Onboarding extends Component {
   render() {
     const { activeStep } = this.state;
     const { classes } = this.props;
-// console.log("state",this.state.children);
 // console.log(this.state.children[activeStep]);
 
     return (
       <Fragment>
-        {this.state.children.length > 0 &&
+        {this.state.children.length > 0 && this.state.visible &&
           <Modal open={this.state.open} onClose={this.handleNext}
           BackdropProps={{
             classes: { root: classes.backdrop }
           }}
           >
+       
             <div>
               <div onClick={this.handleNext}>
                 {this.state.children.length>1?this.state.children[activeStep]: this.state.children}
@@ -202,7 +242,7 @@ class Onboarding extends Component {
               />
               <Button size='small' onClick={this.handleClose} className={classes.skip}> SKIP </Button>
             </div>
-          </Modal>
+           </Modal>
         }
       </Fragment>
     )
