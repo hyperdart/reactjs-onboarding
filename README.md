@@ -5,7 +5,7 @@
 [![NPM](https://img.shields.io/npm/v/reactjs-onboarding.svg)](https://www.npmjs.com/package/reactjs-onboarding) [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
 
 
-![grab-landing-page](https://media.giphy.com/media/dB6kToBHHTetyL6U7d/giphy.gif)
+![grab-landing-page](https://media.giphy.com/media/lQaOi6deAtn0sYpC4C/giphy.gif)
 
 ## Install
 
