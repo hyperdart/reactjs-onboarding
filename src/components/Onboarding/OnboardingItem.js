@@ -127,8 +127,8 @@ class OnboardingItem extends Component {
     }
 
     calculateArrowPosition = (elementToPointLeft, elementToPointTop, elementToPointWidth, elementToPointHeight, innerWidth, innerHeight, arrowWidth, arrowHeight) => {
-        if (this.state.elementToPointTop < innerHeight && elementToPointLeft > innerWidth) {
-            console.log('Q1',arrowWidth)
+        if (elementToPointTop < innerHeight && elementToPointLeft > innerWidth) {
+            console.log('Q1')
             this.setState({
                 arrowPositionLeft: elementToPointLeft - arrowWidth,
                 arrowPositionTop: elementToPointTop + elementToPointHeight,
@@ -177,7 +177,7 @@ class OnboardingItem extends Component {
             else
             {
                 this.setState({
-                    arrowPositionLeft: elementToPointLeft  - arrowWidth,
+                    arrowPositionLeft: elementToPointLeft + elementToPointWidth,
                     arrowPositionTop: elementToPointTop - elementToPointHeight ,
                     // flipX: 180,
                     // flipY: 180
@@ -192,7 +192,7 @@ class OnboardingItem extends Component {
             console.log('Q4')
             this.setState({
                 arrowPositionLeft: elementToPointLeft - arrowWidth,
-                arrowPositionTop: elementToPointTop - elementToPointHeight ,
+                arrowPositionTop: elementToPointTop - elementToPointHeight,
                 // flipX: 180,
                 // flipY: 0
                 flipX:1,

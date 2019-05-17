@@ -85,6 +85,8 @@ class RecipeReviewCard extends React.Component {
           <Typography component="p">
             This impressive paella is a perfect party dish and a fun meal to cook together with your
             guests. Add 1 cup of frozen peas along with the mussels, if you like.
+            Heat 1/2 cup of the broth in a pot until simmering, add saffron and set aside for 10
+            minutes.
           </Typography>
         </CardContent>
         <CardActions className={classes.actions} disableActionSpacing>
@@ -105,10 +107,6 @@ class RecipeReviewCard extends React.Component {
         <Collapse in={this.state.expanded} timeout="auto" unmountOnExit>
           <CardContent>
             <Typography paragraph>Method:</Typography>
-            <Typography paragraph>
-              Heat 1/2 cup of the broth in a pot until simmering, add saffron and set aside for 10
-              minutes.
-            </Typography>
             <Typography paragraph>
               Heat oil in a (14- to 16-inch) paella pan or a large, deep skillet over medium-high
               heat. Add chicken, shrimp and chorizo, and cook, stirring occasionally until lightly

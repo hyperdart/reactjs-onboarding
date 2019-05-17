@@ -118,8 +118,9 @@ class Onboarding extends Component {
     let childrens = [];
     let x
     React.Children.map(this.props.children, (child, i) => {
+// console.log(document.getElementById(child.props.elementCoOrdinate));
 
-      if (child.props.elementCoOrdinate !== "") {
+      if (document.getElementById(child.props.elementCoOrdinate) !== null) {
         // console.log("if");
 
         childrens.push(child);
