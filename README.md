@@ -5,13 +5,13 @@
 [![NPM](https://img.shields.io/npm/v/reactjs-onboarding.svg)](https://www.npmjs.com/package/reactjs-onboarding) [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
 
 
-![grab-landing-page](https://media.giphy.com/media/ZB81lM4DOtKN7CS4Q7/giphy.gif)
+![grab-landing-page](https://media.giphy.com/media/hQu9D1RzMJolsjtvbL/giphy.gif)
 
 ## Install
 
-You can obtain your local copy of reactjs-onboarding.js from:
+These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
 
-**1)** This github repository, using ```git clone https://ikanwar97@bitbucket.org/hyperdart/reactjs-onboarding.git```
+**1)** This github repository, using ```git clone```
 
 **2)** Using npm ```npm install reactjs-onboarding.js --save```
 
@@ -23,18 +23,22 @@ reactjs-onboarding.js can be added to your project in three simple steps:
 
 
 
-**1)** Include named imports of `Onboarding.js` and `OnboardingItem.js` in your page
-For example:
+**1)** Include named imports of `Onboarding.js` and `OnboardingItem.js` in your project
+
+```
+```
 
 ```jsx
-
 import {Onboarding} from 'reactjs-onboarding'
 import {OnboardingItem} from 'reactjs-onboarding'
 ```
 
 
 **2)** Give unique Id to the element that you want to point the arrow to. Or you can give ref to the element
-For example:
+
+```
+```
+
 
 ```jsx
 
@@ -49,27 +53,38 @@ For example:
 
 
 **3)** In componentDidMount set `visible` parameter to true so that Onboarding gets called
-For example:
+
+```
+```
+
 
 ```jsx
-
 componentDidMount(){
   this.setState({visible: true})
 }
 ```
 
 
-**4)** Call Onboarding and OnboardingItem in render method using id or using refs
-For example:
+**4)** Call Onboarding and OnboardingItem in render method using id or using refs. `name` parameter in <Onboarding> corresponds to the flag stored in the localStorage.
+
+```
+```
+
 
 ```jsx
-
 <Onboarding name="example" visible={this.state.visible}>
   <OnboardingItem elementCoOrdinate="example" message="This is the onborading message 1" />
   <OnboardingItem elementCoOrdinate={this.reference} message="This is the onboarding message 2" />
   </OnboardingItem>
 </Onboarding>
 ```
+
+
+## Contributing
+Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+
+Please make sure to update tests as appropriate.
+
 
 
 ## License
