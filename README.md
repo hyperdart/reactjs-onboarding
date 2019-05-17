@@ -5,7 +5,7 @@
 [![NPM](https://img.shields.io/npm/v/reactjs-onboarding.svg)](https://www.npmjs.com/package/reactjs-onboarding) [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
 
 
-![grab-landing-page](https://media.giphy.com/media/ZB81lM4DOtKN7CS4Q7/giphy.gif)
+![grab-landing-page](https://media.giphy.com/media/hQu9D1RzMJolsjtvbL/giphy.gif)
 
 ## Install
 
@@ -27,7 +27,6 @@ reactjs-onboarding.js can be added to your project in three simple steps:
 
 ```
 ```
-
 
 ```jsx
 import {Onboarding} from 'reactjs-onboarding'
