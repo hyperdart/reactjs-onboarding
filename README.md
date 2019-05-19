@@ -37,18 +37,25 @@ import {OnboardingItem} from 'reactjs-onboarding'
 ```
 
 
-**2)** In componentDidMount set `visible` parameter to true so that Onboarding gets called
+**2)** Create a state variable `visible` in the class and set it to false
 
 
 
 ```jsx
-componentDidMount(){
-  this.setState({visible: true})
-}
+state = { visible:false };
 ```
 
 
-**3)** Passing the coordinates
+**3)** Set `visible` parameter to true when you want the Onboarding to get called
+
+
+
+```jsx
+  this.setState({ visible: true })
+```
+
+
+**4)** Passing the coordinates
 
 
 * Give unique Id to the element that you want to point the arrow to
