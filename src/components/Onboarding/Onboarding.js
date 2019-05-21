@@ -46,16 +46,20 @@ const styles = theme => ({
     // },
   },
   backdrop:{
-    backgroundColor:"rgba(0, 0, 0, 0.69)",
-    opacity:"0.1 !important"
+    backgroundColor:"transparent",
+    // opacity:"0.1 !important"
+  },
+  modalRoot: {
+    zIndex: '99999'
   }
 })
 
 class Onboarding extends Component {
   constructor(props) {
     super(props);
-    console.log(props);
-    // console.log(props,document.getElementById(props.children.props.elementCoOrdinate).getBoundingClientRect());
+    // console.log("Onboarding...",props.visible);
+    // console.log(React.Children.toArray(this.props.children)[0].props.elementID)
+    // console.log(props,document.getElementById(props.children.props.elementID).getBoundingClientRect());
     
     let demoFlag = localStorage.getItem("_demo" + this.props.name)
     // console.log(React.Children.toArray(this.props.children)[0]);
@@ -65,21 +69,31 @@ class Onboarding extends Component {
       open: demoFlag === null || demoFlag === "" ? true : false,
       step: React.Children.count(this.props.children),
       children: React.Children.toArray(this.props.children),
-      visible : this.props.visible && React.Children.toArray(this.props.children)[0].props.elementCoOrdinate
+      visible : this.props.visible && React.Children.toArray(this.props.children)[0].props.elementID
     }
 
+    let rootDiv = document.getElementById("root")
+    let newDiv = document.createElement("div")
+    newDiv.id = "onboarding"
+    rootDiv.appendChild(newDiv)
   }
 
 
   componentDidMount() {
-    console.log(this.state.open)
-
+    if(!document.getElementById("onboarding")){
+      let rootDiv = document.getElementById("root")
+      let newDiv = document.createElement("div")
+      newDiv.id = "onboarding"
+      rootDiv.appendChild(newDiv)
+    }
     let childrens = [];
     let x
     React.Children.map(this.props.children, (child, i) => {
+      // console.log(child);
+      
+      // console.log(child.color)
 
-
-      if (child.props.elementCoOrdinate !== "") {
+      if (child.props.elementID !== "") {
         // console.log(child);
         // console.log("if",i);
 
@@ -98,7 +112,7 @@ class Onboarding extends Component {
     // console.log(React.Children.toArray(this.props.children) );
 
     if(prevProps.visible === this.props.visible)  return
-    let visible = this.props.visible && React.Children.toArray(this.props.children)[0].props.elementCoOrdinate 
+    let visible = this.props.visible && React.Children.toArray(this.props.children)[0].props.elementID 
     if(!visible)  return
 
     let demoFlag = localStorage.getItem("_demo" + this.props.name)
@@ -118,9 +132,9 @@ class Onboarding extends Component {
     let childrens = [];
     let x
     React.Children.map(this.props.children, (child, i) => {
-// console.log(document.getElementById(child.props.elementCoOrdinate));
+// console.log(document.getElementById(child.props.elementID));
 
-      if (document.getElementById(child.props.elementCoOrdinate) !== null) {
+      if (document.getElementById(child.props.elementID) !== null || child.props.elementCoOrdinate!==null) {
         // console.log("if");
 
         childrens.push(child);
@@ -148,17 +162,10 @@ class Onboarding extends Component {
     
     console.log(React.Children.toArray(this.props.children[this.state.activeStep]));
     
-    if(typeof React.Children.toArray(this.props.children)[this.state.activeStep].props.elementCoOrdinate == "string"){
-      document.getElementById(React.Children.toArray(this.props.children)[this.state.activeStep].props.elementCoOrdinate).style.boxShadow="none"
-      document.getElementById(React.Children.toArray(this.props.children)[this.state.activeStep].props.elementCoOrdinate).style.border="none"
-      document.getElementById(React.Children.toArray(this.props.children)[this.state.activeStep].props.elementCoOrdinate).style.borderRadius="0"
-  }
-  else{
-      React.Children.toArray(this.props.children)[this.state.activeStep].props.elementCoOrdinate.style.boxShadow="none"
-      React.Children.toArray(this.props.children)[this.state.activeStep].props.elementCoOrdinate.style.border="none"
-      React.Children.toArray(this.props.children)[this.state.activeStep].props.elementCoOrdinate.style.borderRadius="0"
+    document.getElementById("onboarding").style.boxShadow="none"
+      document.getElementById("onboarding").style.border="none"
+      document.getElementById("onboarding").style.borderRadius="0"
 
-  }
     this.setState({ open: false });
     this.setState({ activeStep: 0 });
     localStorage.setItem("_demo" + this.props.name, true)
@@ -172,18 +179,9 @@ class Onboarding extends Component {
       this.setState({ activeStep: 0 });
       localStorage.setItem("_demo" + this.props.name, true)
 
-      if(typeof React.Children.toArray(this.props.children)[this.state.children.length - 1].props.elementCoOrdinate == "string"){
-        
-        document.getElementById(React.Children.toArray(this.props.children)[this.state.children.length - 1].props.elementCoOrdinate).style.boxShadow="none"
-        document.getElementById(React.Children.toArray(this.props.children)[this.state.children.length - 1].props.elementCoOrdinate).style.border="none"
-        document.getElementById(React.Children.toArray(this.props.children)[this.state.children.length - 1].props.elementCoOrdinate).style.borderRadius="0"
-    }
-    else{
-        React.Children.toArray(this.props.children)[this.state.children.length - 1].props.elementCoOrdinate.style.boxShadow="none"
-        React.Children.toArray(this.props.children)[this.state.children.length - 1].props.elementCoOrdinate.style.border="none"
-        React.Children.toArray(this.props.children)[this.state.children.length - 1].props.elementCoOrdinate.style.borderRadius="0"
-  
-    }
+      document.getElementById("onboarding").style.boxShadow="none"
+      document.getElementById("onboarding").style.border="none"
+      document.getElementById("onboarding").style.borderRadius="0"
 
 
     }
@@ -209,6 +207,9 @@ class Onboarding extends Component {
       <Fragment>
         {this.state.children.length > 0 && this.state.visible &&
           <Modal open={this.state.open} onClose={this.handleNext}
+          classes={{
+            root: classes.modalRoot
+          }}
           BackdropProps={{
             classes: { root: classes.backdrop }
           }}
