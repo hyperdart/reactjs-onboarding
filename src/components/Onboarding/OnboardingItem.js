@@ -21,7 +21,6 @@ class OnboardingItem extends Component {
 
     constructor(props) {
         super(props);
-        // console.log(props);
         const { classes } = props;
         var coordinate = {left:0,top:0,width:0,height:0}
 
@@ -33,22 +32,19 @@ class OnboardingItem extends Component {
 
         // send ref
         else if (typeof props.elementID=="object") {
-            console.log("Ref...",props.elementID);
             this.setOnboardingDivStyles(document.getElementById("onboarding"), props.elementID.getBoundingClientRect())
             coordinate = props.elementID.getBoundingClientRect()
-            
         }
 
         // send co-ord
         else {
-            console.log("co...",props.elementCoOrdinate.l);
             
             coordinate.left = props.elementCoOrdinate.l
             coordinate.top = props.elementCoOrdinate.t
             coordinate.width = props.elementCoOrdinate.w
             coordinate.height = props.elementCoOrdinate.h
         }
-        // console.log(props);
+
         this.state = {
             innerHeight: window.innerHeight,
             innerWidth: window.innerWidth,
@@ -63,9 +59,7 @@ class OnboardingItem extends Component {
             arrowWidth: 0,
             arrowHeight: 0,
         }
-    
     }
-
 
     componentDidMount() {
         var coordinate = {left:0,top:0,width:0,height:0}
@@ -80,7 +74,7 @@ class OnboardingItem extends Component {
         else if (typeof this.props.elementID == "object" ) {
 
             this.props.elementID.style.boxShadow = "0 0 0 9999px rgba(0, 0, 0, 0.8)"
-            this.props.elementID.style.border = "2px solid white"
+            this.props.elementID.style.border = "1px solid white"
             this.props.elementID.style.borderRadius = "5px"
             coordinate = this.props.elementID.getBoundingClientRect()
             
@@ -88,7 +82,6 @@ class OnboardingItem extends Component {
 
         // co-ord
         else {
-            console.log("co...",this.props.elementCoOrdinate.l);
             coordinate.left = this.props.elementCoOrdinate.l
             coordinate.top = this.props.elementCoOrdinate.t
             coordinate.width = this.props.elementCoOrdinate.w
@@ -123,7 +116,7 @@ class OnboardingItem extends Component {
             }
             else if (typeof prevProp.elementID == "object") {
                 prevProp.elementID.style.boxShadow="0 0 0 9999px rgba(0, 0, 0, 0.8)"
-                prevProp.elementID.style.border="2px solid white"
+                prevProp.elementID.style.border="1px solid white"
                 prevProp.elementID.style.borderRadius="5px"
             }
             else {
@@ -131,8 +124,6 @@ class OnboardingItem extends Component {
                 document.getElementById("onboarding").style.border = "none"
                 document.getElementById("onboarding").style.borderRadius = "0"
             }
-
-
         }
 
         else if(prevProp.elementCoOrdinate !== this.props.elementCoOrdinate){
@@ -149,7 +140,7 @@ class OnboardingItem extends Component {
         }
         else if (typeof this.props.elementID == "object") {
             this.props.elementID.style.boxShadow = "0 0 0 9999px rgba(0, 0, 0, 0.8)"
-            this.props.elementID.style.border = "2px solid white"
+            this.props.elementID.style.border = "1px solid white"
             this.props.elementID.style.borderRadius = "5px"
             coordinate = this.props.elementID.getBoundingClientRect()
         }
@@ -220,11 +211,11 @@ class OnboardingItem extends Component {
 
         }
         else if (elementToPointTop > innerHeight && elementToPointLeft < innerWidth) {
-            // console.log('Q3')
+            // console.log("Q3");
             if (elementToPointLeft - elementToPointWidth < arrowWidth) {
                 this.setState({
                     arrowPositionLeft: elementToPointLeft + elementToPointWidth,
-                    arrowPositionTop: elementToPointTop - elementToPointHeight,
+                    arrowPositionTop: elementToPointTop ,
                     // flipX: 180,
                     // flipY: 180
                     flipX: -1,
@@ -234,7 +225,7 @@ class OnboardingItem extends Component {
             else {
                 this.setState({
                     arrowPositionLeft: elementToPointLeft + elementToPointWidth,
-                    arrowPositionTop: elementToPointTop - elementToPointHeight,
+                    arrowPositionTop: elementToPointTop ,
                     // flipX: 180,
                     // flipY: 180
                     flipX: -1,
@@ -248,7 +239,7 @@ class OnboardingItem extends Component {
             // console.log('Q4')
             this.setState({
                 arrowPositionLeft: elementToPointLeft - arrowWidth,
-                arrowPositionTop: elementToPointTop - elementToPointHeight,
+                arrowPositionTop: elementToPointTop -arrowHeight/2,
                 // flipX: 180,
                 // flipY: 0
                 flipX: 1,
@@ -276,7 +267,7 @@ class OnboardingItem extends Component {
         onboardingDiv.style.width = elementID.width + "px"
         onboardingDiv.style.height = elementID.height + "px"
         onboardingDiv.style.boxShadow = "0 0 0 9999px rgba(0, 0, 0, 0.8)"
-        onboardingDiv.style.border = "2px solid white"
+        onboardingDiv.style.border = "1px solid white"
         onboardingDiv.style.borderRadius = "5px"
         onboardingDiv.style.zIndex = "99999"
     }
@@ -298,7 +289,7 @@ class OnboardingItem extends Component {
                 WebkitTransform: `scaleX(${this.state.flipX}) scaleY(${this.state.flipY})`,
                 left: this.state.arrowPositionLeft,
                 top: this.state.arrowPositionTop,
-                color:"red"
+                color: "red"
 
             }
         }
@@ -307,8 +298,8 @@ class OnboardingItem extends Component {
                 {this.props.render && this.props.render()}
                 <div>
                     {React.createElement(ArrowCurved, { dimensions: classes.svgDimensions, stylesImg: stylesImg, id: "arrow" })}
-                    <Paper square elevation={0} style={{ textAlign: "center", position: "absolute", top: "0", left: 0, bottom: 0, right: 0, margin: "auto", background: "transparent", height: "100px", width: "100%" }} >
-                        <Typography variant='h6' className={classes.textStyle}>{this.props.message}</Typography>
+                    <Paper square elevation={0}  style={{ textAlign: "center", position: "absolute", top: "0", left: 0, bottom: 0, right: 0, margin: "auto", background: "transparent", height: "100px", width: "100%" }} >
+                        <Typography variant='h6' id="message" className={classes.textStyle}>{this.props.message}</Typography>
                     </Paper>
                 </div>
             </Fragment>

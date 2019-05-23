@@ -58,7 +58,7 @@ class RecipeReviewCard extends React.Component {
 
   render() {
     const { classes } = this.props;
-
+    const commonProps = {l: '100',t: '100', w: '100', h: '100'};
     return (
       <div>
       <Card className={classes.card}>
@@ -133,12 +133,11 @@ class RecipeReviewCard extends React.Component {
       </Card>
 
        <Onboarding name='testing' visible={this.state.visible}>
-         <OnboardingItem elementCoOrdinate="favorite" message='Add to favorites' />
-         <OnboardingItem elementCoOrdinate="options" message='More Options' />
-         <OnboardingItem elementCoOrdinate="share" message='Share it' />
-         <OnboardingItem elementCoOrdinate="more" message='Click to show less' />
+         <OnboardingItem elementID="options" message='More Options'/>
+         <OnboardingItem elementCoOrdinate={{l: 100,t: 100, w: 100, h: 100}} message="Hello" />
+         <OnboardingItem elementID="favorite" message='Add to favorite' />
+         <OnboardingItem elementID="more" message='Click to show less' />
        </Onboarding>
-
       </div>
     );
   }
