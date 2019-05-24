@@ -66,7 +66,7 @@ state = { visible:false };
  Pass the co-ordinates by id
 </div>
 <Onboarding name="testing" visible={this.state.visible}>
-  <OnboardingItem elementCoOrdinate="example" message="This is the onborading message 1" />
+  <OnboardingItem elementID="example" message="This is the onborading message 1" />
 </Onboarding>
 
 ```
@@ -75,11 +75,21 @@ state = { visible:false };
 
 
 ```jsx
-<div ref={(e) => this.reference = e}
+<div ref={(e) => this.reference = e}>
  Pass the co-ordinates by reference
 </div>
 <Onboarding name="testing" visible={this.state.visible}>
-  <OnboardingItem elementCoOrdinate={this.reference} message="This is the onboarding message 2" />
+  <OnboardingItem elementID={this.reference} message="This is the onboarding message 2" />
+</Onboarding>
+
+```
+
+* Give coordinates in the form of object of the area where you want to point the arrow to. l - left, t - top, w - width, h- height 
+
+
+```jsx
+<Onboarding name="testing" visible={this.state.visible}>
+  <OnboardingItem elementCoOrdinate={{ l: 100, t: 100, w: 100, h: 100 }} message="This is the onboarding message 3" />
 </Onboarding>
 
 ```
