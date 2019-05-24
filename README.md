@@ -1,5 +1,5 @@
 # reactjs-onboarding
-----------------------------------------------------------
+
 
 
 > Better introductions for websites and features with a step-by-step guide for your projects. 
@@ -10,7 +10,7 @@
 ![grab-landing-page](https://media.giphy.com/media/hQu9D1RzMJolsjtvbL/giphy.gif)
 
 ## Install
-----------------------------------------------------------
+
 
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
 
@@ -20,7 +20,6 @@ These instructions will get you a copy of the project up and running on your loc
 
 
 ## Usage
-----------------------------------------------------------
 
 
 reactjs-onboarding.js can be added to your project in four simple steps:
@@ -96,7 +95,7 @@ state = { visible:false };
 
 
 ## Contributing
-----------------------------------------------------------
+
 
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
@@ -105,7 +104,6 @@ Please make sure to update tests as appropriate.
 
 
 ## License
-----------------------------------------------------------
 
 
 MIT � [](https://github.com/)
