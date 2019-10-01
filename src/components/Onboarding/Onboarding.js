@@ -1,6 +1,7 @@
 import React, { Component, Fragment } from 'react';
 import { Modal, MobileStepper, Button, withStyles } from '@material-ui/core';
 import CONSTANTS from './constants'
+import OnboardingDiv from './onboarding-div'
 
 const styles = theme => ({
   stepper: {
@@ -55,20 +56,17 @@ const styles = theme => ({
 })
 
 class Onboarding extends Component {
-  constructor(props) {
-    super(props);
-    let demoFlag = localStorage.getItem(CONSTANTS.LOCALSTORAGE_FLAG_PREFIX + this.props.name)              // the demoFlag will be the flag present in localStorage with the initials of `_demo`
+	static current = null;						// to store the current Onboarding item (required for a static reset function - easier to use)
 
+  constructor(props) {
+		super(props);
+		Onboarding.current = this;
+    let demoFlag = localStorage.getItem(CONSTANTS.LOCALSTORAGE_FLAG_PREFIX + this.props.name)              // the demoFlag will be the flag present in localStorage
     this.state = {
       activeStep: 0,                                                            // the current step on which the onboarding is
       open: demoFlag === null || demoFlag === "",
 		}
-		if (document.getElementById(CONSTANTS.ONBOARDING_DIV_ID) === null) {
-			let rootDiv = document.getElementsByTagName("body")[0]     //this creates a blank div on which the box shadow will be applied
-			let newDiv = document.createElement("div")
-			newDiv.id = CONSTANTS.ONBOARDING_DIV_ID
-			rootDiv.appendChild(newDiv)    
-		}
+		OnboardingDiv.create();
   }
 
 
@@ -84,16 +82,12 @@ class Onboarding extends Component {
       if (obj.startsWith(CONSTANTS.LOCALSTORAGE_FLAG_PREFIX)) {
         localStorage.setItem(obj, "")
       }
-    }
+		}
+		Onboarding.current && Onboarding.current.setState({open: true, activeStep: 0})
   }
 
   handleClose = () => {   
-		const onboardingDiv = document.getElementById(CONSTANTS.ONBOARDING_DIV_ID)
-		if (onboardingDiv) {
-			onboardingDiv.style.boxShadow="none"
-			onboardingDiv.style.border="none"
-			onboardingDiv.style.borderRadius="0"
-		}
+		OnboardingDiv.clear()
     this.setState({ open: false, activeStep: 0 });
     localStorage.setItem(CONSTANTS.LOCALSTORAGE_FLAG_PREFIX + this.props.name, true)
   }
@@ -122,8 +116,8 @@ class Onboarding extends Component {
 			(
 				childCount === 1 ? children :
 				(
-					childCount > this.state.activeStep ?
-						children[this.state.activeStep] :
+					childCount > activeStep ?
+						children[activeStep] :
 						children[childCount - 1]
 				) 
 			) : null
@@ -157,7 +151,7 @@ class Onboarding extends Component {
                   </Button>
                 }
                 backButton={
-                  <Button size="small" onClick={this.handleBack} disabled={this.state.activeStep === 0} className={classes.text} aria-label="Done/Next">
+                  <Button size="small" onClick={this.handleBack} disabled={activeStep === 0} className={classes.text} aria-label="Done/Next">
                     {activeStep == 0 ? <p></p> : <p>Back</p>}
                   </Button>
                 }
@@ -170,5 +164,5 @@ class Onboarding extends Component {
     )
   }
 }
-let reset = Onboarding.reset
+
 export default withStyles(styles, { withTheme: true })(Onboarding)
