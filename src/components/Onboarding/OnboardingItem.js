@@ -1,7 +1,8 @@
 import React, { Component, Fragment } from 'react';
-import { Paper, Typography, withStyles, RootRef } from '@material-ui/core';
+import { Typography, withStyles } from '@material-ui/core';
 import ArrowCurved from './cb-arrow.js'
-import CONSTANTS from './constants'
+import OnboardingDiv from './onboarding-div'
+
 
 const styles = theme => ({
     textStyle: {
@@ -43,20 +44,22 @@ class OnboardingItem extends Component {
 		computeStartEndPosition = () => {
 			const { elementID, elementCoOrdinate } = this.props;
 
-			if (this.msgBox.current !== null)
+			if (this.msgBox.current && this.msgBox.current.getBoundingClientRect)
 				this.setState({
 					msgBoxRect: this.msgBox.current.getBoundingClientRect()
 				})
+			const el = typeof elementID === "string" ? 
+								document.getElementById(elementID) : 
+								(typeof elementID === "object" ? elementID : null)
 			const targetRect = typeof elementCoOrdinate === "object" ? {
-																	left: elementCoOrdinate.l, 
-																	top: elementCoOrdinate.t, 
-																	width: elementCoOrdinate.w, 
-																	height: elementCoOrdinate.h, 
-																	right: elementCoOrdinate.l + elementCoOrdinate.w,
-																	bottom: elementCoOrdinate.t + elementCoOrdinate.h
+																	left: elementCoOrdinate.l || 0, 
+																	top: elementCoOrdinate.t || 0, 
+																	width: elementCoOrdinate.w || 0, 
+																	height: elementCoOrdinate.h || 0, 
+																	right: (elementCoOrdinate.l || 0) + (elementCoOrdinate.w || 0),
+																	bottom: (elementCoOrdinate.t || 0) + (elementCoOrdinate.h || 0)
 																} :
-										typeof elementID === "string" ? document.getElementById(elementID).getBoundingClientRect() :
-										typeof elementID === "object" ? elementID.getBoundingClientRect() :
+										typeof elementID === "string" || typeof elementID === "object" ? el && el.getBoundingClientRect && el.getBoundingClientRect() :
 										null;
 			this.setState({
 				targetRect: targetRect
@@ -64,37 +67,18 @@ class OnboardingItem extends Component {
 
 		}
     
-    setOnboardingDivStyles() {
-			const {targetRect} = this.state
-			if (targetRect) {
-				const onboardingDiv = document.getElementById(CONSTANTS.ONBOARDING_DIV_ID)
-				onboardingDiv.style.transition = "all .5s ease-out"
-				onboardingDiv.style.position = "absolute"
-				onboardingDiv.style.left = targetRect.left + "px"
-				onboardingDiv.style.top = targetRect.top + "px"
-				onboardingDiv.style.width = targetRect.width + "px"
-				onboardingDiv.style.height = targetRect.height + "px"
-				onboardingDiv.style.boxShadow = "0 0 0 9999px rgba(0, 0, 0, 0.7)"
-				onboardingDiv.style.border = "1px solid white"
-				onboardingDiv.style.borderRadius = "5px"
-				onboardingDiv.style.zIndex = "99999"	
-			}
-		}
-
     render() {
 				const { classes } = this.props;
 				const {msgBoxRect, targetRect} = this.state;
 
-				this.setOnboardingDivStyles()
+				OnboardingDiv.setTarget(this.state.targetRect)
         return (
             <Fragment>
                 <div>
 									<ArrowCurved color="white" startBox={msgBoxRect} endBox={targetRect}/>
-									<RootRef rootRef={this.msgBox} >
-                    <Paper square elevation={0} className={classes.paperStyle} style={{top: this.props.top}}>
+                    <div ref={this.msgBox} className={classes.paperStyle} style={{top: this.props.top}}>
                         <Typography variant='h6' className={classes.textStyle}>{this.props.message}</Typography>
-                    </Paper>
-									</RootRef>
+                    </div>
                 </div>
             </Fragment>
         )
