@@ -132,9 +132,9 @@ class RecipeReviewCard extends React.Component {
         </Collapse>
       </Card>
 
-       <Onboarding name='testing' visible={this.state.visible}>
+       <Onboarding name='testing'>
          <OnboardingItem elementID="options" message='More Options'/>
-         <OnboardingItem elementCoOrdinate={{l: 100,t: 100, w: 100, h: 100}} message="Hello" />
+				 <OnboardingItem elementCoOrdinate={{l: 100,t: 100, w: 100, h: 100}} message='Add to favorite. This is a really really really long text message for testing the onboarding component.' />
          <OnboardingItem elementID="favorite" message='Add to favorite' />
          <OnboardingItem elementID="more" message='Click to show less' />
        </Onboarding>

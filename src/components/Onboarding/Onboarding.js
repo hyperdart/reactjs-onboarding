@@ -1,5 +1,6 @@
 import React, { Component, Fragment } from 'react';
 import { Modal, MobileStepper, Button, withStyles } from '@material-ui/core';
+import CONSTANTS from './constants'
 
 const styles = theme => ({
   stepper: {
@@ -56,118 +57,51 @@ const styles = theme => ({
 class Onboarding extends Component {
   constructor(props) {
     super(props);
-    let demoFlag = localStorage.getItem("_demo" + this.props.name)              // the demoFlag will be the flag present in localStorage with the initials of `_demo`
+    let demoFlag = localStorage.getItem(CONSTANTS.LOCALSTORAGE_FLAG_PREFIX + this.props.name)              // the demoFlag will be the flag present in localStorage with the initials of `_demo`
 
     this.state = {
       activeStep: 0,                                                            // the current step on which the onboarding is
-      open: demoFlag === null || demoFlag === "" ? true : false,
-      step: React.Children.count(this.props.children),                          // the total number of steps in the modal stepper
-      children: React.Children.toArray(this.props.children),
-      visible : this.props.visible && (React.Children.toArray(this.props.children)[0].props.elementID || React.Children.toArray(this.props.children)[0].props.elementCoOrdinate)    // this flags the visibility of the modal
-    }
-    let rootDiv = document.getElementsByTagName("body")[0]     //this creates a blank div on which the box shadow will be applied
-    let newDiv = document.createElement("div")
-    newDiv.id = "onboarding"
-    rootDiv.appendChild(newDiv)    
+      open: demoFlag === null || demoFlag === "",
+		}
+		if (document.getElementById(CONSTANTS.ONBOARDING_DIV_ID) === null) {
+			let rootDiv = document.getElementsByTagName("body")[0]     //this creates a blank div on which the box shadow will be applied
+			let newDiv = document.createElement("div")
+			newDiv.id = CONSTANTS.ONBOARDING_DIV_ID
+			rootDiv.appendChild(newDiv)    
+		}
   }
 
 
   componentDidMount() {
-    if(!document.getElementById("onboarding")){
-      let rootDiv = document.getElementsByTagName("body")[0]
-      let newDiv = document.createElement("div")
-      newDiv.id = "onboarding"
-      rootDiv.appendChild(newDiv)
-    }
-    let childrens = [];
-    let x
-    React.Children.map(this.props.children, (child, i) => {
-      if ((document.getElementById(child.props.elementID) !== null || child.props.elementCoOrdinate!==undefined)  ) {      
-        childrens.push(child);
-      }
-      x = childrens.length;
-      return childrens.length;
-    });
-    this.setState({ step: x, children: childrens })
   }
 
 
   componentDidUpdate(prevProps, prevState) {    
-    if(prevProps.visible === this.props.visible && localStorage.getItem("_demo" + this.props.name)!== "")  {
-        return
-      }
-    let visible = this.props.visible && (React.Children.toArray(this.props.children)[0].props.elementID || React.Children.toArray(this.props.children)[0].props.elementCoOrdinate)
-    if(!visible) {
-      return
-    } 
-
-    else{
-      let demoFlag = localStorage.getItem("_demo" + this.props.name)
-      var isTrueSet;
-      if (demoFlag === null || demoFlag === "") {
-        isTrueSet = true;
-      }
-      else {
-        isTrueSet = (!demoFlag === 'true');
-      }
-      if (this.state.open !== isTrueSet) {
-        this.setState({ open: true })
-      }
-      if (prevProps !== this.props) {
-      let childrens = [];
-      let x
-      React.Children.map(this.props.children, (child, i) => {
-  
-        if ((document.getElementById(child.props.elementID) !== null || child.props.elementCoOrdinate!==undefined) ) {
-          childrens.push(child);
-        }
-        x = childrens.length;
-        return childrens.length;
-      });
-      this.setState({ 
-        step: x, 
-        children: childrens,
-        visible
-        })
-      }
-    } 
-  }
+	}
+	
   static reset() {
     for (let obj in localStorage) {
-      if (obj.startsWith("_demo")) {
+      if (obj.startsWith(CONSTANTS.LOCALSTORAGE_FLAG_PREFIX)) {
         localStorage.setItem(obj, "")
       }
     }
   }
 
-  handleClose = () => {
-    
-    document.getElementById("onboarding").style.boxShadow="none"
-      document.getElementById("onboarding").style.border="none"
-      document.getElementById("onboarding").style.borderRadius="0"
-
-    this.setState({ open: false });
-    this.setState({ visible: false });
-    this.setState({ activeStep: 0 });
-    localStorage.setItem("_demo" + this.props.name, true)
-  };
+  handleClose = () => {   
+		const onboardingDiv = document.getElementById(CONSTANTS.ONBOARDING_DIV_ID)
+		if (onboardingDiv) {
+			onboardingDiv.style.boxShadow="none"
+			onboardingDiv.style.border="none"
+			onboardingDiv.style.borderRadius="0"
+		}
+    this.setState({ open: false, activeStep: 0 });
+    localStorage.setItem(CONSTANTS.LOCALSTORAGE_FLAG_PREFIX + this.props.name, true)
+  }
 
   handleNext = () => {
-    if (this.state.activeStep == this.state.children.length - 1) {
-      this.setState({
-        open: false
-      })
-      this.setState({ visible: false });
-      this.setState({ activeStep: 0 });
-      localStorage.setItem("_demo" + this.props.name, true)
-
-      document.getElementById("onboarding").style.boxShadow="none"
-      document.getElementById("onboarding").style.border="none"
-      document.getElementById("onboarding").style.borderRadius="0"
-
-
-    }
-    else {
+    if (this.state.activeStep >= React.Children.count(this.props.children) - 1) {
+			this.handleClose();
+    } else {
       this.setState(prevState => ({
         activeStep: prevState.activeStep + 1,
       }));
@@ -182,11 +116,20 @@ class Onboarding extends Component {
 
   render() {
     const { activeStep } = this.state;
-    const { classes } = this.props;
-
+    const { classes, children } = this.props;
+		const childCount = React.Children.count(children)
+		const activeChild = childCount > 0 ? 
+			(
+				childCount === 1 ? children :
+				(
+					childCount > this.state.activeStep ?
+						children[this.state.activeStep] :
+						children[childCount - 1]
+				) 
+			) : null
     return (
       <Fragment>
-        {this.state.children.length > 0 && this.state.visible &&
+        {childCount > 0 &&
           <Modal open={this.state.open} onClose={this.handleNext}
           classes={{
             root: classes.modalRoot
@@ -198,28 +141,24 @@ class Onboarding extends Component {
        
             <div>
               <div onClick={this.handleNext}>
-                {this.state.children.length>1?this.state.children[activeStep]: this.state.children}
+								{activeChild}
               </div>
               <MobileStepper
-                steps={this.state.children.length}                              //maxSteps
+                steps={childCount}                              //maxSteps
                 position="static"
-                activeStep={this.state.activeStep}
+                activeStep={activeStep}
                 className={classes.stepper}
                 classes={{
                   dotActive: classes.dotActive
                 }}
                 nextButton={
                   <Button size="small" onClick={this.handleNext} className={classes.text} aria-label="Done/Next">
-                    {this.state.activeStep == this.state.children.length - 1 ?
-                      <p>Done</p>
-                      : <p>Next</p>}
+                    {activeStep == childCount - 1 ? <p>Done</p> : <p>Next</p>}
                   </Button>
                 }
                 backButton={
                   <Button size="small" onClick={this.handleBack} disabled={this.state.activeStep === 0} className={classes.text} aria-label="Done/Next">
-                    {this.state.activeStep == 0 ?
-                      <p></p>
-                      : <p>Back</p>}
+                    {activeStep == 0 ? <p></p> : <p>Back</p>}
                   </Button>
                 }
               />
