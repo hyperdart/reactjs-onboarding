@@ -2,6 +2,7 @@ import React, { Component, Fragment } from 'react';
 import { Modal, MobileStepper, Button, withStyles } from '@material-ui/core';
 import CONSTANTS from './constants'
 import OnboardingDiv from './onboarding-div'
+import OnboardingTag from './OnboardingTag'
 
 const styles = theme => ({
   stepper: {
@@ -93,7 +94,7 @@ class Onboarding extends Component {
   }
 
   handleNext = () => {
-    if (this.state.activeStep >= React.Children.count(this.props.children) - 1) {
+    if (this.state.activeStep >= React.Children.count(this.props.children) + OnboardingTag.TagItems.length - 1) {
 			this.handleClose();
     } else {
       this.setState(prevState => ({
@@ -111,15 +112,22 @@ class Onboarding extends Component {
   render() {
     const { activeStep } = this.state;
     const { classes, children } = this.props;
-		const childCount = React.Children.count(children)
-		const activeChild = childCount > 0 ? 
-			(
-				childCount === 1 ? children :
-				(
-					childCount > activeStep ?
-						children[activeStep] :
-						children[childCount - 1]
-				) 
+		// const childCount = React.Children.count(children)
+		// const activeChild = childCount > 0 ? 
+		// 	(
+		// 		childCount === 1 ? children :
+		// 		(
+		// 			childCount > activeStep ?
+		// 				children[activeStep] :
+		// 				children[childCount - 1]
+		// 		) 
+		// 	) : null
+		const childArray = React.Children.toArray(children).concat(OnboardingTag.TagItems)
+		const childCount = childArray.length
+		const activeChild = childCount > 0 ?
+			(childCount > activeStep ?
+				childArray[activeStep] :
+				childArray[childCount - 1]
 			) : null
     return (
       <Fragment>
