@@ -2,6 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {Onboarding} from "reactjs-onboarding";
 import {OnboardingItem} from "reactjs-onboarding";
+import {OnboardingTag} from "reactjs-onboarding";
 import { withStyles } from '@material-ui/core/styles';
 import classnames from 'classnames';
 import Card from '@material-ui/core/Card';
@@ -69,9 +70,11 @@ class RecipeReviewCard extends React.Component {
             </Avatar>
           }
           action={
+						<OnboardingTag message="More options via OnboardingTag">
             <IconButton id="options">
               <MoreVertIcon />
             </IconButton>
+						</OnboardingTag>
           }
           title="Shrimp and Chorizo Paella"
           subheader="September 14, 2016"
@@ -133,7 +136,7 @@ class RecipeReviewCard extends React.Component {
       </Card>
 
        <Onboarding name='testing'>
-         <OnboardingItem elementID="options" message='More Options'/>
+         {/* <OnboardingItem elementID="options" message='More Options'/> */}
 				 <OnboardingItem elementCoOrdinate={{l: 100,t: 100, w: 100, h: 100}} message='Add to favorite. This is a really really really long text message for testing the onboarding component.' />
          <OnboardingItem elementID={document.getElementById("favorite")} message='Add to favorite' />
          <OnboardingItem elementID="more" message='Click to show less' />
