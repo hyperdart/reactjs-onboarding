@@ -382,7 +382,7 @@ var styles$1 = function styles(theme) {
       // },
     },
     backdrop: {
-      backgroundColor: "transparent"
+      backgroundColor: "transparent!important"
       // opacity:"0.1 !important"
     },
     modalRoot: {
@@ -451,14 +451,14 @@ var Onboarding = function (_Component) {
           classes = _props.classes,
           children = _props.children;
       // const childCount = React.Children.count(children)
-      // const activeChild = childCount > 0 ? 
-      // 	(
+      // const activeChild = childCount > 0 ?
+      // (
       // 		childCount === 1 ? children :
       // 		(
       // 			childCount > activeStep ?
       // 				children[activeStep] :
       // 				children[childCount - 1]
-      // 		) 
+      // 		)
       // 	) : null
 
       var childArray = React__default.Children.toArray(children).concat(OnboardingTag.TagItems);
@@ -470,12 +470,14 @@ var Onboarding = function (_Component) {
         childCount > 0 && React__default.createElement(
           core.Modal,
           { open: this.state.open, onClose: this.handleNext,
-            classes: {
-              root: classes.modalRoot
-            },
-            BackdropProps: {
-              classes: { root: classes.backdrop }
-            }
+            style: { zIndex: '99999', backgroundColor: "transparent!important" },
+            hideBackdrop: true
+            // classes={{
+            //   root: classes.modalRoot
+            // }}
+            // BackdropProps={{
+            //   classes: { root: classes.backdrop }
+            // }}
           },
           React__default.createElement(
             'div',

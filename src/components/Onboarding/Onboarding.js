@@ -48,7 +48,7 @@ const styles = theme => ({
     // },
   },
   backdrop:{
-    backgroundColor:"transparent",
+    backgroundColor:"transparent!important",
     // opacity:"0.1 !important"
   },
   modalRoot: {
@@ -75,9 +75,9 @@ class Onboarding extends Component {
   }
 
 
-  componentDidUpdate(prevProps, prevState) {    
+  componentDidUpdate(prevProps, prevState) {
 	}
-	
+
   static reset() {
     for (let obj in localStorage) {
       if (obj.startsWith(CONSTANTS.LOCALSTORAGE_FLAG_PREFIX)) {
@@ -87,7 +87,7 @@ class Onboarding extends Component {
 		Onboarding.current && Onboarding.current.setState({open: true, activeStep: 0})
   }
 
-  handleClose = () => {   
+  handleClose = () => {
 		OnboardingDiv.clear()
     this.setState({ open: false, activeStep: 0 });
     localStorage.setItem(CONSTANTS.LOCALSTORAGE_FLAG_PREFIX + this.props.name, true)
@@ -112,15 +112,15 @@ class Onboarding extends Component {
   render() {
     const { activeStep } = this.state;
     const { classes, children } = this.props;
-		// const childCount = React.Children.count(children)
-		// const activeChild = childCount > 0 ? 
-		// 	(
+    // const childCount = React.Children.count(children)
+    // const activeChild = childCount > 0 ?
+    // (
 		// 		childCount === 1 ? children :
 		// 		(
 		// 			childCount > activeStep ?
 		// 				children[activeStep] :
 		// 				children[childCount - 1]
-		// 		) 
+		// 		)
 		// 	) : null
 		const childArray = React.Children.toArray(children).concat(OnboardingTag.TagItems)
 		const childCount = childArray.length
@@ -133,17 +133,19 @@ class Onboarding extends Component {
       <Fragment>
         {childCount > 0 &&
           <Modal open={this.state.open} onClose={this.handleNext}
-          classes={{
-            root: classes.modalRoot
-          }}
-          BackdropProps={{
-            classes: { root: classes.backdrop }
-          }}
+            style={{zIndex: '99999',backgroundColor:"transparent!important"}}
+            hideBackdrop={true}
+            // classes={{
+            //   root: classes.modalRoot
+            // }}
+            // BackdropProps={{
+            //   classes: { root: classes.backdrop }
+            // }}
           >
-       
+
             <div>
               <div onClick={this.handleNext}>
-								{activeChild}
+                {activeChild}
               </div>
               <MobileStepper
                 steps={childCount}                              //maxSteps
@@ -166,7 +168,7 @@ class Onboarding extends Component {
               />
               <Button size='small' onClick={this.handleClose} className={classes.skip}> SKIP </Button>
             </div>
-           </Modal>
+          </Modal>
         }
       </Fragment>
     )
