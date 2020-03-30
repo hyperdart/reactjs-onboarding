@@ -5,6 +5,7 @@
   "author": "HyperDart",
   "license": "MIT",
   "repository": "https://github.com/hyperdart/reactjs-onboarding.git",
+  "homepage": "https://github.com/hyperdart/reactjs-onboarding",
   "main": "dist/index.js",
   "module": "dist/index.es.js",
   "jsnext:main": "dist/index.es.js",
