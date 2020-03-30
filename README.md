@@ -2,14 +2,14 @@
 
 
 
-> Better introductions for websites and features with a step-by-step guide for your projects. 
+> The reactjs-onboarding library exported as Node.js modules.
 
 [![NPM](https://img.shields.io/npm/v/reactjs-onboarding.svg)](https://www.npmjs.com/package/reactjs-onboarding) [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
 
 
 ![grab-landing-page](https://media.giphy.com/media/hQu9D1RzMJolsjtvbL/giphy.gif)
 
-## Install
+## Installation
 
 
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
@@ -26,13 +26,14 @@ reactjs-onboarding.js can be added to your project in four simple steps:
 
 
 
-**1)** Include named imports of `Onboarding.js` and `OnboardingItem.js` in your project
+**1)** Include named imports of `Onboarding.js` and `OnboardingItem.js` / `OnboardingTag.js`  in your project
 
 
 
 ```jsx
 import {Onboarding} from 'reactjs-onboarding'
 import {OnboardingItem} from 'reactjs-onboarding'
+import {OnboardingTag} from 'reactjs-onboarding'
 ```
 
 
@@ -83,7 +84,7 @@ state = { visible:false };
 
 ```
 
-* Give coordinates in the form of object of the area where you want to point the arrow to. l - left, t - top, w - width, h- height 
+* Give coordinates in the form of object of the area where you want to point the arrow to. l - left, t - top, w - width, h- height
 
 
 ```jsx
@@ -93,6 +94,18 @@ state = { visible:false };
 
 ```
 
+* Enclose the elements you want to highlight in an OnboardingTag
+
+
+```jsx
+	<OnboardingTag message="More options via OnboardingTag">
+    <IconButton id="options">
+      <MoreVertIcon />
+    </IconButton>
+	</OnboardingTag>
+
+
+```
 
 ## Contributing
 
@@ -100,7 +113,6 @@ state = { visible:false };
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
 Please make sure to update tests as appropriate.
-
 
 
 ## License
