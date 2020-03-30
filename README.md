@@ -98,11 +98,11 @@ state = { visible:false };
 
 
 ```jsx
-	<OnboardingTag message="More options via OnboardingTag">
-    <IconButton id="options">
-      <MoreVertIcon />
-    </IconButton>
-	</OnboardingTag>
+<OnboardingTag message="More options via OnboardingTag">
+ <IconButton id="options">
+   <MoreVertIcon />
+ </IconButton>
+</OnboardingTag>
 
 
 ```
