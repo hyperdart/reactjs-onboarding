@@ -1,10 +1,10 @@
 {
   "name": "reactjs-onboarding",
   "version": "1.0.0",
-  "description": "",
-  "author": "",
+  "description": "A node module that will help user create a tour of an application. Note: reactjs-onboarding is in development mode.",
+  "author": "HyperDart",
   "license": "MIT",
-  "repository": "/reactjs-onboarding",
+  "repository": "https://github.com/hyperdart/reactjs-onboarding.git",
   "main": "dist/index.js",
   "module": "dist/index.es.js",
   "jsnext:main": "dist/index.es.js",
