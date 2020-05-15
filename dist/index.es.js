@@ -88,7 +88,7 @@ _class.create = function () {
 	}
 };
 
-_class.setTarget = function (targetRect) {
+_class.setTarget = function (targetRect, disableArrow) {
 	var onboardingDiv = document.getElementById(CONSTANTS.ONBOARDING_DIV_ID);
 	if (onboardingDiv && targetRect) {
 		onboardingDiv.style.visibility = "visible";
@@ -99,8 +99,10 @@ _class.setTarget = function (targetRect) {
 		onboardingDiv.style.width = targetRect.width + "px";
 		onboardingDiv.style.height = targetRect.height + "px";
 		onboardingDiv.style.boxShadow = "0 0 0 9999px rgba(0, 0, 0, 0.7)";
-		onboardingDiv.style.border = "1px solid white";
-		onboardingDiv.style.borderRadius = "5px";
+		if (!disableArrow) {
+			onboardingDiv.style.border = "1px solid white";
+			onboardingDiv.style.borderRadius = "5px";
+		}
 		onboardingDiv.style.zIndex = "99999";
 	}
 };
@@ -183,6 +185,8 @@ var ArrowCurved = (function (props) {
 	);
 });
 
+/*eslint-disable*/
+
 var styles = function styles(theme) {
 				return {
 								textStyle: {
@@ -236,7 +240,8 @@ var OnboardingItem = function (_Component) {
 								_this.msgBox = React.createRef();
 								_this.state = {
 												msgBoxRect: null,
-												targetRect: null
+												targetRect: null,
+												disableArrow: props.disableArrow !== undefined ? props.disableArrow : false
 								};
 								return _this;
 				}
@@ -249,6 +254,7 @@ var OnboardingItem = function (_Component) {
 				}, {
 								key: 'componentDidUpdate',
 								value: function componentDidUpdate(prevProp, prevState) {
+												// console.log("PP",prevProp)
 												if (prevProp.elementID !== this.props.elementID || prevProp.elementCoOrdinate !== this.props.elementCoOrdinate) this.computeStartEndPosition();
 								}
 				}, {
@@ -260,14 +266,14 @@ var OnboardingItem = function (_Component) {
 												    targetRect = _state.targetRect;
 
 
-												_class.setTarget(this.state.targetRect);
+												_class.setTarget(this.state.targetRect, this.props.disableArrow);
 												return React.createElement(
 																Fragment,
 																null,
 																React.createElement(
 																				'div',
 																				null,
-																				React.createElement(ArrowCurved, { color: 'white', startBox: msgBoxRect, endBox: targetRect }),
+																				!this.state.disableArrow && React.createElement(ArrowCurved, { color: 'white', startBox: msgBoxRect, endBox: targetRect }),
 																				React.createElement(
 																								'div',
 																								{ ref: this.msgBox, className: classes.paperStyle, style: { top: this.props.top } },
@@ -330,6 +336,8 @@ var OnboardingTag = function (_Component) {
 }(Component);
 
 OnboardingTag.TagItems = [];
+
+/*eslint-disable*/
 
 var styles$1 = function styles(theme) {
   return {
