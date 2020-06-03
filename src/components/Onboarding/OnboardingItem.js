@@ -78,7 +78,7 @@ class OnboardingItem extends Component {
         return (
             <Fragment>
                 <div>
-									<ArrowCurved color="white"width={this.state.disableArrow && "0" } startBox={msgBoxRect} endBox={targetRect}/>
+									<ArrowCurved color="white" width={this.state.disableArrow && "0" } startBox={msgBoxRect} endBox={targetRect}/>
 									<div ref={this.msgBox} className={classes.paperStyle} style={{top: this.props.top}}>
 											<Typography variant='h6' className={classes.textStyle}>{this.props.message}</Typography>
 									</div>
