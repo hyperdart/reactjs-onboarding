@@ -84,7 +84,7 @@ class Onboarding extends Component {
       if (obj.startsWith(CONSTANTS.LOCALSTORAGE_FLAG_PREFIX)) {
         localStorage.setItem(obj, "")
       }
-		}
+    }
 		Onboarding.current && Onboarding.current.setState({open: true, activeStep: 0})
   }
 
@@ -95,7 +95,16 @@ class Onboarding extends Component {
   }
 
   handleNext = () => {
-    if (this.state.activeStep >= React.Children.count(this.props.children) + OnboardingTag.TagItems.length - 1) {
+
+    let children = this.props.children
+    children.forEach((child,index)=>{
+      typeof child.props.elementID === 'string'?
+        document.getElementById(child.props.elementID) === null ?
+        children = children.filter(id => id.props.elementID!==child.props.elementID)
+        :
+        "" : ""
+    })
+    if (this.state.activeStep >= React.Children.count(children) + OnboardingTag.TagItems.length - 1) {
 			this.handleClose();
     } else {
       this.setState(prevState => ({
@@ -113,6 +122,16 @@ class Onboarding extends Component {
   render() {
     const { activeStep } = this.state;
     const { classes, children } = this.props;
+
+    let children1 = this.props.children
+    children1.forEach((child,index)=>{
+      typeof child.props.elementID === 'string'?
+        document.getElementById(child.props.elementID) === null ?
+        children1 = children1.filter(id => id.props.elementID!==child.props.elementID)
+        :
+        "" : ""
+    })
+
     // const childCount = React.Children.count(children)
     // const activeChild = childCount > 0 ?
     // (
@@ -123,7 +142,8 @@ class Onboarding extends Component {
 		// 				children[childCount - 1]
 		// 		)
 		// 	) : null
-		const childArray = React.Children.toArray(children).concat(OnboardingTag.TagItems)
+    const childArray = React.Children.toArray(children1).concat(OnboardingTag.TagItems)
+
 		const childCount = childArray.length
 		const activeChild = childCount > 0 ?
 			(childCount > activeStep ?

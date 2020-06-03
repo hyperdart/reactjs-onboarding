@@ -416,7 +416,14 @@ var Onboarding = function (_Component) {
     };
 
     _this.handleNext = function () {
-      if (_this.state.activeStep >= React__default.Children.count(_this.props.children) + OnboardingTag.TagItems.length - 1) {
+
+      var children = _this.props.children;
+      children.forEach(function (child, index) {
+        typeof child.props.elementID === 'string' ? document.getElementById(child.props.elementID) === null ? children = children.filter(function (id) {
+          return id.props.elementID !== child.props.elementID;
+        }) : "" : "";
+      });
+      if (_this.state.activeStep >= React__default.Children.count(children) + OnboardingTag.TagItems.length - 1) {
         _this.handleClose();
       } else {
         _this.setState(function (prevState) {
@@ -458,6 +465,15 @@ var Onboarding = function (_Component) {
       var _props = this.props,
           classes = _props.classes,
           children = _props.children;
+
+
+      var children1 = this.props.children;
+      children1.forEach(function (child, index) {
+        typeof child.props.elementID === 'string' ? document.getElementById(child.props.elementID) === null ? children1 = children1.filter(function (id) {
+          return id.props.elementID !== child.props.elementID;
+        }) : "" : "";
+      });
+
       // const childCount = React.Children.count(children)
       // const activeChild = childCount > 0 ?
       // (
@@ -468,8 +484,8 @@ var Onboarding = function (_Component) {
       // 				children[childCount - 1]
       // 		)
       // 	) : null
+      var childArray = React__default.Children.toArray(children1).concat(OnboardingTag.TagItems);
 
-      var childArray = React__default.Children.toArray(children).concat(OnboardingTag.TagItems);
       var childCount = childArray.length;
       var activeChild = childCount > 0 ? childCount > activeStep ? childArray[activeStep] : childArray[childCount - 1] : null;
       return React__default.createElement(
