@@ -1,6 +1,6 @@
 {
   "name": "reactjs-onboarding",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "A node module that will help user create a tour of an application. Note: reactjs-onboarding is in development mode.",
   "author": "HyperDart",
   "license": "MIT",
