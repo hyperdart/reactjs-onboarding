@@ -280,7 +280,7 @@ var OnboardingItem = function (_Component) {
 																React__default.createElement(
 																				'div',
 																				null,
-																				!this.state.disableArrow && React__default.createElement(ArrowCurved, { color: 'white', startBox: msgBoxRect, endBox: targetRect }),
+																				React__default.createElement(ArrowCurved, { color: 'white', width: this.state.disableArrow && "0", startBox: msgBoxRect, endBox: targetRect }),
 																				React__default.createElement(
 																								'div',
 																								{ ref: this.msgBox, className: classes.paperStyle, style: { top: this.props.top } },
