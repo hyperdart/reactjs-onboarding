@@ -30,7 +30,7 @@
     "prop-types": "^15.5.4",
     "react": "^16.4.1",
     "react-dom": "^16.4.1",
-    "@material-ui/core": "~3.7.1"
+    "@material-ui/core": ">=4.11.0"
   },
   "devDependencies": {
     "@svgr/rollup": "^4.3.3",
