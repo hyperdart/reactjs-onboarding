@@ -69,12 +69,16 @@ class Onboarding extends Component {
       open: demoFlag === null || demoFlag === "",
 		}
 		OnboardingDiv.create();
+		this._mountedHref = window.location.href;
   }
 
 
-  componentDidMount() {
-  }
 
+  componentWillUnmount() {
+    if (window.location.href !== this._mountedHref) {
+      OnboardingDiv.clear();
+    }
+  }
 
   componentDidUpdate(prevProps, prevState) {
 	}

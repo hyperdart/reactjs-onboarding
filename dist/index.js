@@ -449,12 +449,17 @@ var Onboarding = function (_Component) {
       open: demoFlag === null || demoFlag === ""
     };
     _class.create();
+    _this._mountedHref = window.location.href;
     return _this;
   }
 
   createClass(Onboarding, [{
-    key: 'componentDidMount',
-    value: function componentDidMount() {}
+    key: 'componentWillUnmount',
+    value: function componentWillUnmount() {
+      if (window.location.href !== this._mountedHref) {
+        _class.clear();
+      }
+    }
   }, {
     key: 'componentDidUpdate',
     value: function componentDidUpdate(prevProps, prevState) {}
