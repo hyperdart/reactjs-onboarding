@@ -1,8 +1,3 @@
-var _Onboarding = require("./components/Onboarding/Onboarding")
-var _OnboardingItem = require("./components/Onboarding/OnboardingItem")
-var _OnboardingTag = require("./components/Onboarding/OnboardingTag")
-
-module.exports.Onboarding = _Onboarding
-// module.exports.reset = _Onboarding.reset
-module.exports.OnboardingItem = _OnboardingItem
-module.exports.OnboardingTag = _OnboardingTag
+export { default as Onboarding } from './components/Onboarding/Onboarding'
+export { default as OnboardingItem } from './components/Onboarding/OnboardingItem'
+export { default as OnboardingTag } from './components/Onboarding/OnboardingTag'

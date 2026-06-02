@@ -1,32 +1,29 @@
-import React, { Component } from 'react';
+/*eslint-disable*/
+import React, { useEffect, useRef } from 'react';
 import OnboardingItem from './OnboardingItem'
 
-export default class OnboardingTag extends Component {
-	static TagItems = [];
+const _tagItems = [];
 
-	constructor(props) {
-		super(props);
-		this.tagRef = React.createRef();
-		this.tagItem = null
-		OnboardingTag.tag = this.tagRef;
-	}
+function OnboardingTag({ message, children }) {
+  const tagRef = useRef(null);
+  const tagItemRef = useRef(null);
 
-	componentDidMount() {
-		if (this.tagRef.current) {
-			this.tagItem = React.createElement(OnboardingItem, {elementID: this.tagRef.current, message: this.props.message})
-			OnboardingTag.TagItems.push(this.tagItem)	
-		} else {
-			console.log('Warning: Could not find OnboardingTag item to add.')
-		}
-	}
+  useEffect(() => {
+    if (tagRef.current) {
+      tagItemRef.current = React.createElement(OnboardingItem, { elementID: tagRef.current, message });
+      _tagItems.push(tagItemRef.current);
+    } else {
+      console.warn('OnboardingTag: could not find mounted element.');
+    }
+    return () => {
+      const idx = _tagItems.indexOf(tagItemRef.current);
+      if (idx > -1) _tagItems.splice(idx, 1);
+    };
+  }, []);
 
-	componentWillUnmount() {
-		const idx = OnboardingTag.TagItems.indexOf(this.tagItem)
-		if (idx > -1)
-			OnboardingTag.TagItems.splice(idx, 1)
-	}
-
-	render() {
-		return <div ref={this.tagRef}>{this.props.children}</div>
-	}
+  return <div ref={tagRef}>{children}</div>;
 }
+
+OnboardingTag.TagItems = _tagItems;
+
+export default OnboardingTag;

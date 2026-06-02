@@ -1,203 +1,243 @@
 /*eslint-disable*/
 import React, { Component, Fragment } from 'react';
-import { Modal, MobileStepper, Button, withStyles } from '@material-ui/core';
 import CONSTANTS from './constants'
 import OnboardingDiv from './onboarding-div'
 import OnboardingTag from './OnboardingTag'
 
-const styles = theme => ({
-  stepper: {
-    background: 'transparent',
+// Z-index layers:
+//   onboarding-div (dark spotlight)  99998
+//   overlay + arrow SVG              99999
+//   message box (white card)        100000
+//   controls + skip                 100001
+
+const S = {
+  overlay: {
     position: 'fixed',
-    height: '5%',
+    top: 0,
+    left: 0,
     width: '100%',
-    margin: '0 auto',
-    bottom: '5%',
-    [theme.breakpoints.up('md')]: {
-      width: '50%',
-      right: "0",
-      left: "0",
-      position: "absolute",
-    },
+    height: '100%',
+    zIndex: 99999,
+    cursor: 'pointer',
+    outline: 'none',
+  },
+  // Solid dark pill so controls are clearly above the overlay, not lost in it
+  controls: {
+    position: 'fixed',
+    bottom: '32px',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    zIndex: 100001,
+    background: 'rgba(17, 17, 17, 0.78)',
+    border: '1px solid rgba(255,255,255,0.1)',
+    borderRadius: '40px',
+    padding: '8px 14px',
+    whiteSpace: 'nowrap',
+  },
+  navBtn: (disabled) => ({
+    background: 'none',
+    border: 'none',
+    color: disabled ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.9)',
+    fontSize: '22px',
+    lineHeight: '1',
+    cursor: disabled ? 'default' : 'pointer',
+    padding: '0',
+    width: '28px',
+    height: '28px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontFamily: 'system-ui, sans-serif',
+    transition: 'color 0.15s',
+    flexShrink: 0,
+  }),
+  // Solid white pill for the Done button — stands out clearly
+  doneBtn: {
+    background: 'white',
+    border: 'none',
+    borderRadius: '20px',
+    padding: '5px 16px',
+    color: '#111827',
+    fontSize: '13px',
+    fontFamily: 'system-ui, -apple-system, sans-serif',
+    fontWeight: 600,
+    letterSpacing: '0.2px',
+    cursor: 'pointer',
+    transition: 'opacity 0.15s',
+    flexShrink: 0,
+  },
+  dot: (active) => ({
+    width: active ? '8px' : '5px',
+    height: active ? '8px' : '5px',
+    borderRadius: '50%',
+    background: active ? 'white' : 'rgba(255,255,255,0.3)',
+    transition: 'all 0.25s ease',
+    flexShrink: 0,
+  }),
+  stepLabel: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: '12px',
+    fontFamily: 'system-ui, -apple-system, sans-serif',
+    minWidth: '40px',
+    textAlign: 'center',
   },
   skip: {
-    position: 'absolute',
-    bottom: "10%",
-    width: '20%',
-    right:0,
-    left:0,
-    padding:0,
-    margin: '0 auto',
-    color: 'white',
-    fontFamily: "Georgia,Roboto, Helvetica, Arial, cursive",
-    fontSize: '15px',
-    fontStyle: "italic"
-    // [theme.breakpoints.up('sm')]: {
-    //   fontFamily: '"cursive","Roboto", "Helvetica", "Arial", sans-serif'
-    // },
+    position: 'fixed',
+    bottom: '38px',
+    right: '32px',
+    background: 'none',
+    border: 'none',
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: '12px',
+    fontFamily: 'system-ui, -apple-system, sans-serif',
+    cursor: 'pointer',
+    zIndex: 100001,
+    padding: '6px 8px',
+    letterSpacing: '0.3px',
+    transition: 'color 0.15s',
   },
-  dotActive: {
-    backgroundColor: 'white'
-  },
-  text: {
-   fontFamily: "Georgia,Roboto, Helvetica, Arial, cursive",
-    color: 'white',
-    fontSize: '15px',
-    fontStyle: "italic"
-    // [theme.breakpoints.up('sm')]: {
-    //   fontFamily: '"cursive", "Roboto", "Helvetica", "Arial", sans-serif'
-    // },
-  },
-  backdrop:{
-    backgroundColor:"transparent!important",
-    // opacity:"0.1 !important"
-  },
-  modalRoot: {
-    zIndex: '99999'
-  }
-})
+};
 
 class Onboarding extends Component {
-	static current = null;						// to store the current Onboarding item (required for a static reset function - easier to use)
+  static current = null;
 
   constructor(props) {
-		super(props);
-		Onboarding.current = this;
-    let demoFlag = localStorage.getItem(CONSTANTS.LOCALSTORAGE_FLAG_PREFIX + this.props.name)              // the demoFlag will be the flag present in localStorage
+    super(props);
+    Onboarding.current = this;
+    const demoFlag = localStorage.getItem(CONSTANTS.LOCALSTORAGE_FLAG_PREFIX + this.props.name);
     this.state = {
-      activeStep: 0,                                                            // the current step on which the onboarding is
-      open: demoFlag === null || demoFlag === "",
-		}
-		OnboardingDiv.create();
-		this._mountedHref = window.location.href;
+      activeStep: 0,
+      open: demoFlag === null || demoFlag === '',
+    };
+    OnboardingDiv.create();
+    this._mountedHref = window.location.href;
   }
 
-
+  componentDidMount() {
+    document.addEventListener('keydown', this._handleKeyDown);
+  }
 
   componentWillUnmount() {
+    document.removeEventListener('keydown', this._handleKeyDown);
     if (window.location.href !== this._mountedHref) {
       OnboardingDiv.clear();
     }
   }
 
-  componentDidUpdate(prevProps, prevState) {
-	}
+  _handleKeyDown = (e) => {
+    if (!this.state.open) return;
+    if (e.key === 'Escape') this.handleClose();
+    else if (e.key === 'ArrowRight' || e.key === 'Enter') this.handleNext();
+    else if (e.key === 'ArrowLeft') this.handleBack();
+  }
 
   static reset() {
     for (let obj in localStorage) {
       if (obj.startsWith(CONSTANTS.LOCALSTORAGE_FLAG_PREFIX)) {
-        localStorage.setItem(obj, "")
+        localStorage.setItem(obj, '');
       }
     }
-		Onboarding.current && Onboarding.current.setState({open: true, activeStep: 0})
+    Onboarding.current && Onboarding.current.setState({ open: true, activeStep: 0 });
   }
 
   handleClose = () => {
-		OnboardingDiv.clear()
+    OnboardingDiv.clear();
     this.setState({ open: false, activeStep: 0 });
-    localStorage.setItem(CONSTANTS.LOCALSTORAGE_FLAG_PREFIX + this.props.name, true)
+    localStorage.setItem(CONSTANTS.LOCALSTORAGE_FLAG_PREFIX + this.props.name, 'true');
+  }
+
+  _getChildArray = () => {
+    const filtered = React.Children.toArray(this.props.children).filter(child => {
+      const id = child.props && child.props.elementID;
+      if (typeof id === 'string') return document.getElementById(id) !== null;
+      return true;
+    });
+    return filtered.concat(OnboardingTag.TagItems);
   }
 
   handleNext = () => {
-
-    let children = this.props.children
-    children.forEach((child,index)=>{
-      typeof child.props.elementID === 'string'?
-        document.getElementById(child.props.elementID) === null ?
-        children = children.filter(id => id.props.elementID!==child.props.elementID)
-        :
-        "" : ""
-    })
-    if (this.state.activeStep >= React.Children.count(children) + OnboardingTag.TagItems.length - 1) {
-			this.handleClose();
+    const childArray = this._getChildArray();
+    if (this.state.activeStep >= childArray.length - 1) {
+      this.handleClose();
     } else {
-      this.setState(prevState => ({
-        activeStep: prevState.activeStep + 1,
-      }));
+      this.setState(prev => ({ activeStep: prev.activeStep + 1 }));
     }
-  };
+  }
 
   handleBack = () => {
-    this.setState(prevState => ({
-      activeStep: prevState.activeStep - 1,
-    }));
-  };
+    if (this.state.activeStep > 0) {
+      this.setState(prev => ({ activeStep: prev.activeStep - 1 }));
+    }
+  }
 
   render() {
-    const { activeStep } = this.state;
-    const { classes, children } = this.props;
+    const { activeStep, open } = this.state;
+    if (!open) return null;
 
-    let children1 = this.props.children
-    children1.forEach((child,index)=>{
-      typeof child.props.elementID === 'string'?
-        document.getElementById(child.props.elementID) === null ?
-        children1 = children1.filter(id => id.props.elementID!==child.props.elementID)
-        :
-        "" : ""
-    })
+    const childArray = this._getChildArray();
+    const childCount = childArray.length;
+    if (childCount === 0) return null;
 
-    // const childCount = React.Children.count(children)
-    // const activeChild = childCount > 0 ?
-    // (
-		// 		childCount === 1 ? children :
-		// 		(
-		// 			childCount > activeStep ?
-		// 				children[activeStep] :
-		// 				children[childCount - 1]
-		// 		)
-		// 	) : null
-    const childArray = React.Children.toArray(children1).concat(OnboardingTag.TagItems)
+    const step = Math.min(activeStep, childCount - 1);
+    const activeChild = childArray[step];
+    const isFirst = step === 0;
+    const isLast = step >= childCount - 1;
+    const showDots = childCount <= 10;
 
-		const childCount = childArray.length
-		const activeChild = childCount > 0 ?
-			(childCount > activeStep ?
-				childArray[activeStep] :
-				childArray[childCount - 1]
-			) : null
     return (
       <Fragment>
-        {childCount > 0 &&
-          <Modal open={this.state.open} onClose={this.handleNext}
-            style={{zIndex: '99999',backgroundColor:"transparent!important"}}
-            hideBackdrop={true}
-            // classes={{
-            //   root: classes.modalRoot
-            // }}
-            // BackdropProps={{
-            //   classes: { root: classes.backdrop }
-            // }}
-          >
+        {/* Full-screen click catcher — sits above the dark spotlight, contains the arrow SVG */}
+        <div
+          style={S.overlay}
+          onClick={this.handleNext}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Onboarding tour"
+          tabIndex={-1}
+        >
+          {activeChild}
+        </div>
 
-            <div>
-              <div onClick={this.handleNext}>
-                {activeChild}
-              </div>
-              <MobileStepper
-                steps={childCount}                              //maxSteps
-                position="static"
-                activeStep={activeStep}
-                className={classes.stepper}
-                classes={{
-                  dotActive: classes.dotActive
-                }}
-                nextButton={
-                  <Button size="small" onClick={this.handleNext} className={classes.text} aria-label="Done/Next">
-                    {activeStep == childCount - 1 ? <p>Done</p> : <p>Next</p>}
-                  </Button>
-                }
-                backButton={
-                  <Button size="small" onClick={this.handleBack} disabled={activeStep === 0} className={classes.text} aria-label="Done/Next">
-                    {activeStep == 0 ? <p></p> : <p>Back</p>}
-                  </Button>
-                }
-              />
-              <Button size='small' onClick={this.handleClose} className={classes.skip}> SKIP </Button>
-            </div>
-          </Modal>
-        }
+        {/* Controls pill — stop propagation so clicks here don't fire handleNext */}
+        <div style={S.controls} onClick={e => e.stopPropagation()}>
+          <button
+            style={S.navBtn(isFirst)}
+            onClick={this.handleBack}
+            disabled={isFirst}
+            aria-label="Previous step"
+          >
+            ‹
+          </button>
+
+          {showDots
+            ? childArray.map((_, i) => <span key={i} style={S.dot(i === step)} aria-hidden="true" />)
+            : <span style={S.stepLabel}>{step + 1} / {childCount}</span>
+          }
+
+          <button
+            style={isLast ? S.doneBtn : S.navBtn(false)}
+            onClick={isLast ? this.handleClose : this.handleNext}
+            aria-label={isLast ? 'Finish tour' : 'Next step'}
+          >
+            {isLast ? 'Done' : '›'}
+          </button>
+        </div>
+
+        <button
+          style={S.skip}
+          onClick={this.handleClose}
+          aria-label="Skip tour"
+          onMouseEnter={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.85)'; }}
+          onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; }}
+        >
+          Skip tour
+        </button>
       </Fragment>
-    )
+    );
   }
 }
 
-export default withStyles(styles, { withTheme: true })(Onboarding)
+export default Onboarding;

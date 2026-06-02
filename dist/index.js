@@ -6,7 +6,6 @@ function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'defau
 
 var React = require('react');
 var React__default = _interopDefault(React);
-var core = require('@material-ui/core');
 
 var CONSTANTS = {
 	ONBOARDING_DIV_ID: "__reactjs_onboarding",
@@ -43,21 +42,6 @@ var createClass = function () {
   };
 }();
 
-var defineProperty = function (obj, key, value) {
-  if (key in obj) {
-    Object.defineProperty(obj, key, {
-      value: value,
-      enumerable: true,
-      configurable: true,
-      writable: true
-    });
-  } else {
-    obj[key] = value;
-  }
-
-  return obj;
-};
-
 var inherits = function (subClass, superClass) {
   if (typeof superClass !== "function" && superClass !== null) {
     throw new TypeError("Super expression must either be null or a function, not " + typeof superClass);
@@ -83,50 +67,61 @@ var possibleConstructorReturn = function (self, call) {
 };
 
 var _class = function _class() {
-	classCallCheck(this, _class);
+  classCallCheck(this, _class);
 };
 
 _class.create = function () {
-	if (document.getElementById(CONSTANTS.ONBOARDING_DIV_ID) === null) {
-		var rootDiv = document.getElementsByTagName("body")[0]; //this creates a blank div on which the box shadow will be applied
-		var newDiv = document.createElement("div");
-		newDiv.id = CONSTANTS.ONBOARDING_DIV_ID;
-		rootDiv.appendChild(newDiv);
-	}
+  if (document.getElementById(CONSTANTS.ONBOARDING_DIV_ID) === null) {
+    var body = document.getElementsByTagName('body')[0];
+    var div = document.createElement('div');
+    div.id = CONSTANTS.ONBOARDING_DIV_ID;
+    div.style.position = 'fixed';
+    div.style.pointerEvents = 'none';
+    div.style.visibility = 'hidden';
+    // Keep below React root's z-index so the arrow SVG (rendered inside React) paints on top.
+    // onboarding-div is appended to <body> after the React root, so at equal z-index it would
+    // win the DOM-order paint race and cover the arrow — hence one level lower here.
+    div.style.zIndex = '99998';
+    body.appendChild(div);
+  }
 };
 
 _class.setTarget = function (targetRect, disableArrow) {
-	var onboardingDiv = document.getElementById(CONSTANTS.ONBOARDING_DIV_ID);
-	if (onboardingDiv && targetRect) {
-		onboardingDiv.style.visibility = "visible";
-		onboardingDiv.style.transition = "all .5s ease-out";
-		onboardingDiv.style.position = "absolute";
-		onboardingDiv.style.left = targetRect.left + "px";
-		onboardingDiv.style.top = targetRect.top + "px";
-		onboardingDiv.style.width = targetRect.width + "px";
-		onboardingDiv.style.height = targetRect.height + "px";
-		onboardingDiv.style.boxShadow = "0 0 0 9999px rgba(0, 0, 0, 0.7)";
-		if (!disableArrow) {
-			onboardingDiv.style.border = "1px solid white";
-			onboardingDiv.style.borderRadius = "5px";
-		}
-		onboardingDiv.style.zIndex = "99999";
-	}
+  var div = document.getElementById(CONSTANTS.ONBOARDING_DIV_ID);
+  if (!div || !targetRect) return;
+
+  div.style.visibility = 'visible';
+  div.style.transition = 'left 0.35s cubic-bezier(0.4,0,0.2,1), top 0.35s cubic-bezier(0.4,0,0.2,1), width 0.35s cubic-bezier(0.4,0,0.2,1), height 0.35s cubic-bezier(0.4,0,0.2,1)';
+  div.style.position = 'fixed';
+  div.style.left = targetRect.left + 'px';
+  div.style.top = targetRect.top + 'px';
+  div.style.width = targetRect.width + 'px';
+  div.style.height = targetRect.height + 'px';
+  div.style.zIndex = '99998';
+
+  if (!disableArrow) {
+    div.style.border = '2px solid rgba(255,255,255,0.8)';
+    div.style.borderRadius = '6px';
+    div.style.boxShadow = '0 0 0 9999px rgba(0,0,0,0.68)';
+  } else {
+    div.style.border = 'none';
+    div.style.borderRadius = '0';
+    div.style.boxShadow = '0 0 0 9999px rgba(0,0,0,0.68)';
+  }
 };
 
 _class.clear = function () {
-	var onboardingDiv = document.getElementById(CONSTANTS.ONBOARDING_DIV_ID);
-	if (onboardingDiv) {
-		onboardingDiv.style.visibility = "hidden";
-		onboardingDiv.style.left = "0px";
-		onboardingDiv.style.top = "0px";
-		onboardingDiv.style.width = "0px";
-		onboardingDiv.style.height = "0px";
-		onboardingDiv.style.boxShadow = "none";
-		onboardingDiv.style.border = "none";
-		onboardingDiv.style.borderRadius = "0";
-		onboardingDiv.style.zIndex = "-1";
-	}
+  var div = document.getElementById(CONSTANTS.ONBOARDING_DIV_ID);
+  if (!div) return;
+  div.style.visibility = 'hidden';
+  div.style.left = '0';
+  div.style.top = '0';
+  div.style.width = '0';
+  div.style.height = '0';
+  div.style.boxShadow = 'none';
+  div.style.border = 'none';
+  div.style.borderRadius = '0';
+  div.style.zIndex = '-1';
 };
 
 var ArrowCurved = (function (props) {
@@ -194,259 +189,348 @@ var ArrowCurved = (function (props) {
 
 /*eslint-disable*/
 
-var styles = function styles(theme) {
-				return {
-								textStyle: {
-												color: 'white',
-												fontFamily: "Georgia,Roboto, Helvetica, Arial, cursive",
-												fontStyle: "italic"
-								},
-								paperStyle: {
-												textAlign: "center",
-												position: "absolute",
-												top: "50%",
-												left: "50%",
-												background: "transparent",
-												width: "60%",
-												transform: "translate(-50%, -50%)"
-								}
-				};
+if (typeof document !== 'undefined' && !document.getElementById('__ob_styles')) {
+  var style = document.createElement('style');
+  style.id = '__ob_styles';
+  style.textContent = '@keyframes obIn{from{opacity:0;transform:translate(-50%,-48%)}to{opacity:1;transform:translate(-50%,-50%)}} @keyframes obInTop{from{opacity:0}to{opacity:1}}';
+  document.head.appendChild(style);
+}
+
+var getMsgBoxStyle = function getMsgBoxStyle(top) {
+  return {
+    position: 'fixed',
+    top: top !== undefined ? top : '50%',
+    left: '50%',
+    transform: top !== undefined ? 'translateX(-50%)' : 'translate(-50%, -50%)',
+    background: '#ffffff',
+    borderRadius: '12px',
+    padding: '24px 32px',
+    maxWidth: '320px',
+    width: 'calc(100vw - 64px)',
+    boxSizing: 'border-box',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.12), 0 20px 48px rgba(0,0,0,0.38)',
+    pointerEvents: 'none',
+    zIndex: 100000,
+    animation: top !== undefined ? 'obInTop 0.2s ease-out' : 'obIn 0.2s ease-out'
+  };
+};
+
+var msgTextStyle = {
+  color: '#111827',
+  fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
+  fontSize: '15px',
+  fontWeight: 500,
+  lineHeight: 1.65,
+  margin: 0,
+  textAlign: 'center'
 };
 
 var OnboardingItem = function (_Component) {
-				inherits(OnboardingItem, _Component);
+  inherits(OnboardingItem, _Component);
 
-				function OnboardingItem(props) {
-								classCallCheck(this, OnboardingItem);
+  function OnboardingItem(props) {
+    classCallCheck(this, OnboardingItem);
 
-								var _this = possibleConstructorReturn(this, (OnboardingItem.__proto__ || Object.getPrototypeOf(OnboardingItem)).call(this, props));
+    var _this = possibleConstructorReturn(this, (OnboardingItem.__proto__ || Object.getPrototypeOf(OnboardingItem)).call(this, props));
 
-								_this.computeStartEndPosition = function () {
-												var _this$props = _this.props,
-												    elementID = _this$props.elementID,
-												    elementCoOrdinate = _this$props.elementCoOrdinate;
+    _this._onResize = function () {
+      // Throttle via rAF so rapid scroll/resize bursts don't cause continuous re-renders
+      if (_this._raf) cancelAnimationFrame(_this._raf);
+      _this._raf = requestAnimationFrame(_this.computeStartEndPosition);
+    };
+
+    _this.computeStartEndPosition = function () {
+      var _this$props = _this.props,
+          elementID = _this$props.elementID,
+          elementCoOrdinate = _this$props.elementCoOrdinate;
+
+      // Read both rects before calling setState so both go into a single update —
+      // two separate setState calls would cause two renders; the first would briefly
+      // render the arrow with one stale rect, causing visible flicker.
+
+      var msgBoxRect = _this.msgBox.current && _this.msgBox.current.getBoundingClientRect ? _this.msgBox.current.getBoundingClientRect() : _this.state.msgBoxRect;
+
+      var el = typeof elementID === 'string' ? document.getElementById(elementID) : (typeof elementID === 'undefined' ? 'undefined' : _typeof(elementID)) === 'object' ? elementID : null;
+
+      var targetRect = null;
+      if ((typeof elementCoOrdinate === 'undefined' ? 'undefined' : _typeof(elementCoOrdinate)) === 'object' && elementCoOrdinate !== null) {
+        targetRect = {
+          left: elementCoOrdinate.l || 0,
+          top: elementCoOrdinate.t || 0,
+          width: elementCoOrdinate.w || 0,
+          height: elementCoOrdinate.h || 0,
+          right: (elementCoOrdinate.l || 0) + (elementCoOrdinate.w || 0),
+          bottom: (elementCoOrdinate.t || 0) + (elementCoOrdinate.h || 0)
+        };
+      } else if (typeof elementID === 'string' || (typeof elementID === 'undefined' ? 'undefined' : _typeof(elementID)) === 'object') {
+        targetRect = el && el.getBoundingClientRect ? el.getBoundingClientRect() : null;
+      }
+
+      // Direct DOM update first — spotlight repositions immediately without waiting for setState
+      _class.setTarget(targetRect, _this.props.disableArrow);
+
+      // Single batched setState — one render, no intermediate flicker state
+      _this.setState({ msgBoxRect: msgBoxRect, targetRect: targetRect });
+    };
+
+    _this.msgBox = React__default.createRef();
+    _this._raf = null;
+    _this.state = {
+      msgBoxRect: null,
+      targetRect: null,
+      disableArrow: props.disableArrow !== undefined ? props.disableArrow : false
+    };
+    return _this;
+  }
+
+  createClass(OnboardingItem, [{
+    key: 'componentDidMount',
+    value: function componentDidMount() {
+      this.computeStartEndPosition();
+      window.addEventListener('resize', this._onResize);
+      // Bubble phase only — avoids firing for every scroll inside nested elements
+      window.addEventListener('scroll', this._onResize);
+    }
+  }, {
+    key: 'componentWillUnmount',
+    value: function componentWillUnmount() {
+      window.removeEventListener('resize', this._onResize);
+      window.removeEventListener('scroll', this._onResize);
+      if (this._raf) cancelAnimationFrame(this._raf);
+    }
+  }, {
+    key: 'componentDidUpdate',
+    value: function componentDidUpdate(prevProps, prevState) {
+      if (prevProps.elementID !== this.props.elementID || prevProps.elementCoOrdinate !== this.props.elementCoOrdinate) {
+        this.computeStartEndPosition();
+        return;
+      }
+      // Update spotlight when targetRect changes — kept out of render() to avoid side-effect in render
+      if (prevState.targetRect !== this.state.targetRect) {
+        _class.setTarget(this.state.targetRect, this.props.disableArrow);
+      }
+    }
+  }, {
+    key: 'render',
+    value: function render() {
+      // NOTE: no OnboardingDiv.setTarget here — side effects in render() cause flicker
+      // because React may call render() multiple times before committing.
+      var _state = this.state,
+          msgBoxRect = _state.msgBoxRect,
+          targetRect = _state.targetRect,
+          disableArrow = _state.disableArrow;
+      var _props = this.props,
+          message = _props.message,
+          top = _props.top;
 
 
-												if (_this.msgBox.current && _this.msgBox.current.getBoundingClientRect) _this.setState({
-																msgBoxRect: _this.msgBox.current.getBoundingClientRect()
-												});
-												var el = typeof elementID === "string" ? document.getElementById(elementID) : (typeof elementID === 'undefined' ? 'undefined' : _typeof(elementID)) === "object" ? elementID : null;
-												var targetRect = (typeof elementCoOrdinate === 'undefined' ? 'undefined' : _typeof(elementCoOrdinate)) === "object" ? {
-																left: elementCoOrdinate.l || 0,
-																top: elementCoOrdinate.t || 0,
-																width: elementCoOrdinate.w || 0,
-																height: elementCoOrdinate.h || 0,
-																right: (elementCoOrdinate.l || 0) + (elementCoOrdinate.w || 0),
-																bottom: (elementCoOrdinate.t || 0) + (elementCoOrdinate.h || 0)
-												} : typeof elementID === "string" || (typeof elementID === 'undefined' ? 'undefined' : _typeof(elementID)) === "object" ? el && el.getBoundingClientRect && el.getBoundingClientRect() : null;
-												_this.setState({
-																targetRect: targetRect
-												});
-								};
-
-								_this.msgBox = React__default.createRef();
-								_this.state = {
-												msgBoxRect: null,
-												targetRect: null,
-												disableArrow: props.disableArrow !== undefined ? props.disableArrow : false
-								};
-								return _this;
-				}
-
-				createClass(OnboardingItem, [{
-								key: 'componentDidMount',
-								value: function componentDidMount() {
-												this.computeStartEndPosition();
-								}
-				}, {
-								key: 'componentDidUpdate',
-								value: function componentDidUpdate(prevProp, prevState) {
-												// console.log("PP",prevProp)
-												if (prevProp.elementID !== this.props.elementID || prevProp.elementCoOrdinate !== this.props.elementCoOrdinate) this.computeStartEndPosition();
-								}
-				}, {
-								key: 'render',
-								value: function render() {
-												var classes = this.props.classes;
-												var _state = this.state,
-												    msgBoxRect = _state.msgBoxRect,
-												    targetRect = _state.targetRect;
-
-
-												_class.setTarget(this.state.targetRect, this.props.disableArrow);
-												return React__default.createElement(
-																React.Fragment,
-																null,
-																React__default.createElement(
-																				'div',
-																				null,
-																				React__default.createElement(ArrowCurved, { color: 'white', width: this.state.disableArrow && "0", startBox: msgBoxRect, endBox: targetRect }),
-																				React__default.createElement(
-																								'div',
-																								{ ref: this.msgBox, className: classes.paperStyle, style: { top: this.props.top } },
-																								React__default.createElement(
-																												core.Typography,
-																												{ variant: 'h6', className: classes.textStyle },
-																												this.props.message
-																								)
-																				)
-																)
-												);
-								}
-				}]);
-				return OnboardingItem;
+      return React__default.createElement(
+        React.Fragment,
+        null,
+        !disableArrow && React__default.createElement(ArrowCurved, { color: 'white', width: 2, startBox: msgBoxRect, endBox: targetRect }),
+        React__default.createElement(
+          'div',
+          { ref: this.msgBox, style: getMsgBoxStyle(top) },
+          React__default.createElement(
+            'p',
+            { style: msgTextStyle },
+            message
+          )
+        )
+      );
+    }
+  }]);
+  return OnboardingItem;
 }(React.Component);
-
-var OnboardingItem$1 = core.withStyles(styles, { withTheme: true })(OnboardingItem);
-
-var OnboardingTag = function (_Component) {
-	inherits(OnboardingTag, _Component);
-
-	function OnboardingTag(props) {
-		classCallCheck(this, OnboardingTag);
-
-		var _this = possibleConstructorReturn(this, (OnboardingTag.__proto__ || Object.getPrototypeOf(OnboardingTag)).call(this, props));
-
-		_this.tagRef = React__default.createRef();
-		_this.tagItem = null;
-		OnboardingTag.tag = _this.tagRef;
-		return _this;
-	}
-
-	createClass(OnboardingTag, [{
-		key: 'componentDidMount',
-		value: function componentDidMount() {
-			if (this.tagRef.current) {
-				this.tagItem = React__default.createElement(OnboardingItem$1, { elementID: this.tagRef.current, message: this.props.message });
-				OnboardingTag.TagItems.push(this.tagItem);
-			} else {
-				console.log('Warning: Could not find OnboardingTag item to add.');
-			}
-		}
-	}, {
-		key: 'componentWillUnmount',
-		value: function componentWillUnmount() {
-			var idx = OnboardingTag.TagItems.indexOf(this.tagItem);
-			if (idx > -1) OnboardingTag.TagItems.splice(idx, 1);
-		}
-	}, {
-		key: 'render',
-		value: function render() {
-			return React__default.createElement(
-				'div',
-				{ ref: this.tagRef },
-				this.props.children
-			);
-		}
-	}]);
-	return OnboardingTag;
-}(React.Component);
-
-OnboardingTag.TagItems = [];
 
 /*eslint-disable*/
 
-var styles$1 = function styles(theme) {
-  return {
-    stepper: defineProperty({
-      background: 'transparent',
-      position: 'fixed',
-      height: '5%',
-      width: '100%',
-      margin: '0 auto',
-      bottom: '5%'
-    }, theme.breakpoints.up('md'), {
-      width: '50%',
-      right: "0",
-      left: "0",
-      position: "absolute"
-    }),
-    skip: {
-      position: 'absolute',
-      bottom: "10%",
-      width: '20%',
-      right: 0,
-      left: 0,
-      padding: 0,
-      margin: '0 auto',
-      color: 'white',
-      fontFamily: "Georgia,Roboto, Helvetica, Arial, cursive",
-      fontSize: '15px',
-      fontStyle: "italic"
-      // [theme.breakpoints.up('sm')]: {
-      //   fontFamily: '"cursive","Roboto", "Helvetica", "Arial", sans-serif'
-      // },
-    },
-    dotActive: {
-      backgroundColor: 'white'
-    },
-    text: {
-      fontFamily: "Georgia,Roboto, Helvetica, Arial, cursive",
-      color: 'white',
-      fontSize: '15px',
-      fontStyle: "italic"
-      // [theme.breakpoints.up('sm')]: {
-      //   fontFamily: '"cursive", "Roboto", "Helvetica", "Arial", sans-serif'
-      // },
-    },
-    backdrop: {
-      backgroundColor: "transparent!important"
-      // opacity:"0.1 !important"
-    },
-    modalRoot: {
-      zIndex: '99999'
+var _tagItems = [];
+
+function OnboardingTag(_ref) {
+  var message = _ref.message,
+      children = _ref.children;
+
+  var tagRef = React.useRef(null);
+  var tagItemRef = React.useRef(null);
+
+  React.useEffect(function () {
+    if (tagRef.current) {
+      tagItemRef.current = React__default.createElement(OnboardingItem, { elementID: tagRef.current, message: message });
+      _tagItems.push(tagItemRef.current);
+    } else {
+      console.warn('OnboardingTag: could not find mounted element.');
     }
-  };
+    return function () {
+      var idx = _tagItems.indexOf(tagItemRef.current);
+      if (idx > -1) _tagItems.splice(idx, 1);
+    };
+  }, []);
+
+  return React__default.createElement(
+    'div',
+    { ref: tagRef },
+    children
+  );
+}
+
+OnboardingTag.TagItems = _tagItems;
+
+/*eslint-disable*/
+
+// Z-index layers:
+//   onboarding-div (dark spotlight)  99998
+//   overlay + arrow SVG              99999
+//   message box (white card)        100000
+//   controls + skip                 100001
+
+var S = {
+  overlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    zIndex: 99999,
+    cursor: 'pointer',
+    outline: 'none'
+  },
+  // Solid dark pill so controls are clearly above the overlay, not lost in it
+  controls: {
+    position: 'fixed',
+    bottom: '32px',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    zIndex: 100001,
+    background: 'rgba(17, 17, 17, 0.78)',
+    border: '1px solid rgba(255,255,255,0.1)',
+    borderRadius: '40px',
+    padding: '8px 14px',
+    whiteSpace: 'nowrap'
+  },
+  navBtn: function navBtn(disabled) {
+    return {
+      background: 'none',
+      border: 'none',
+      color: disabled ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.9)',
+      fontSize: '22px',
+      lineHeight: '1',
+      cursor: disabled ? 'default' : 'pointer',
+      padding: '0',
+      width: '28px',
+      height: '28px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontFamily: 'system-ui, sans-serif',
+      transition: 'color 0.15s',
+      flexShrink: 0
+    };
+  },
+  // Solid white pill for the Done button — stands out clearly
+  doneBtn: {
+    background: 'white',
+    border: 'none',
+    borderRadius: '20px',
+    padding: '5px 16px',
+    color: '#111827',
+    fontSize: '13px',
+    fontFamily: 'system-ui, -apple-system, sans-serif',
+    fontWeight: 600,
+    letterSpacing: '0.2px',
+    cursor: 'pointer',
+    transition: 'opacity 0.15s',
+    flexShrink: 0
+  },
+  dot: function dot(active) {
+    return {
+      width: active ? '8px' : '5px',
+      height: active ? '8px' : '5px',
+      borderRadius: '50%',
+      background: active ? 'white' : 'rgba(255,255,255,0.3)',
+      transition: 'all 0.25s ease',
+      flexShrink: 0
+    };
+  },
+  stepLabel: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: '12px',
+    fontFamily: 'system-ui, -apple-system, sans-serif',
+    minWidth: '40px',
+    textAlign: 'center'
+  },
+  skip: {
+    position: 'fixed',
+    bottom: '38px',
+    right: '32px',
+    background: 'none',
+    border: 'none',
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: '12px',
+    fontFamily: 'system-ui, -apple-system, sans-serif',
+    cursor: 'pointer',
+    zIndex: 100001,
+    padding: '6px 8px',
+    letterSpacing: '0.3px',
+    transition: 'color 0.15s'
+  }
 };
 
 var Onboarding = function (_Component) {
   inherits(Onboarding, _Component);
-
-  // to store the current Onboarding item (required for a static reset function - easier to use)
 
   function Onboarding(props) {
     classCallCheck(this, Onboarding);
 
     var _this = possibleConstructorReturn(this, (Onboarding.__proto__ || Object.getPrototypeOf(Onboarding)).call(this, props));
 
+    _this._handleKeyDown = function (e) {
+      if (!_this.state.open) return;
+      if (e.key === 'Escape') _this.handleClose();else if (e.key === 'ArrowRight' || e.key === 'Enter') _this.handleNext();else if (e.key === 'ArrowLeft') _this.handleBack();
+    };
+
     _this.handleClose = function () {
       _class.clear();
       _this.setState({ open: false, activeStep: 0 });
-      localStorage.setItem(CONSTANTS.LOCALSTORAGE_FLAG_PREFIX + _this.props.name, true);
+      localStorage.setItem(CONSTANTS.LOCALSTORAGE_FLAG_PREFIX + _this.props.name, 'true');
+    };
+
+    _this._getChildArray = function () {
+      var filtered = React__default.Children.toArray(_this.props.children).filter(function (child) {
+        var id = child.props && child.props.elementID;
+        if (typeof id === 'string') return document.getElementById(id) !== null;
+        return true;
+      });
+      return filtered.concat(OnboardingTag.TagItems);
     };
 
     _this.handleNext = function () {
-
-      var children = _this.props.children;
-      children.forEach(function (child, index) {
-        typeof child.props.elementID === 'string' ? document.getElementById(child.props.elementID) === null ? children = children.filter(function (id) {
-          return id.props.elementID !== child.props.elementID;
-        }) : "" : "";
-      });
-      if (_this.state.activeStep >= React__default.Children.count(children) + OnboardingTag.TagItems.length - 1) {
+      var childArray = _this._getChildArray();
+      if (_this.state.activeStep >= childArray.length - 1) {
         _this.handleClose();
       } else {
-        _this.setState(function (prevState) {
-          return {
-            activeStep: prevState.activeStep + 1
-          };
+        _this.setState(function (prev) {
+          return { activeStep: prev.activeStep + 1 };
         });
       }
     };
 
     _this.handleBack = function () {
-      _this.setState(function (prevState) {
-        return {
-          activeStep: prevState.activeStep - 1
-        };
-      });
+      if (_this.state.activeStep > 0) {
+        _this.setState(function (prev) {
+          return { activeStep: prev.activeStep - 1 };
+        });
+      }
     };
 
     Onboarding.current = _this;
-    var demoFlag = localStorage.getItem(CONSTANTS.LOCALSTORAGE_FLAG_PREFIX + _this.props.name); // the demoFlag will be the flag present in localStorage
+    var demoFlag = localStorage.getItem(CONSTANTS.LOCALSTORAGE_FLAG_PREFIX + _this.props.name);
     _this.state = {
-      activeStep: 0, // the current step on which the onboarding is
-      open: demoFlag === null || demoFlag === ""
+      activeStep: 0,
+      open: demoFlag === null || demoFlag === ''
     };
     _class.create();
     _this._mountedHref = window.location.href;
@@ -454,105 +538,100 @@ var Onboarding = function (_Component) {
   }
 
   createClass(Onboarding, [{
+    key: 'componentDidMount',
+    value: function componentDidMount() {
+      document.addEventListener('keydown', this._handleKeyDown);
+    }
+  }, {
     key: 'componentWillUnmount',
     value: function componentWillUnmount() {
+      document.removeEventListener('keydown', this._handleKeyDown);
       if (window.location.href !== this._mountedHref) {
         _class.clear();
       }
     }
   }, {
-    key: 'componentDidUpdate',
-    value: function componentDidUpdate(prevProps, prevState) {}
-  }, {
     key: 'render',
     value: function render() {
-      var activeStep = this.state.activeStep;
-      var _props = this.props,
-          classes = _props.classes,
-          children = _props.children;
+      var _state = this.state,
+          activeStep = _state.activeStep,
+          open = _state.open;
 
+      if (!open) return null;
 
-      var children1 = this.props.children;
-      children1.forEach(function (child, index) {
-        typeof child.props.elementID === 'string' ? document.getElementById(child.props.elementID) === null ? children1 = children1.filter(function (id) {
-          return id.props.elementID !== child.props.elementID;
-        }) : "" : "";
-      });
-
-      // const childCount = React.Children.count(children)
-      // const activeChild = childCount > 0 ?
-      // (
-      // 		childCount === 1 ? children :
-      // 		(
-      // 			childCount > activeStep ?
-      // 				children[activeStep] :
-      // 				children[childCount - 1]
-      // 		)
-      // 	) : null
-      var childArray = React__default.Children.toArray(children1).concat(OnboardingTag.TagItems);
-
+      var childArray = this._getChildArray();
       var childCount = childArray.length;
-      var activeChild = childCount > 0 ? childCount > activeStep ? childArray[activeStep] : childArray[childCount - 1] : null;
+      if (childCount === 0) return null;
+
+      var step = Math.min(activeStep, childCount - 1);
+      var activeChild = childArray[step];
+      var isFirst = step === 0;
+      var isLast = step >= childCount - 1;
+      var showDots = childCount <= 10;
+
       return React__default.createElement(
         React.Fragment,
         null,
-        childCount > 0 && React__default.createElement(
-          core.Modal,
-          { open: this.state.open, onClose: this.handleNext,
-            style: { zIndex: '99999', backgroundColor: "transparent!important" },
-            hideBackdrop: true
-            // classes={{
-            //   root: classes.modalRoot
-            // }}
-            // BackdropProps={{
-            //   classes: { root: classes.backdrop }
-            // }}
+        React__default.createElement(
+          'div',
+          {
+            style: S.overlay,
+            onClick: this.handleNext,
+            role: 'dialog',
+            'aria-modal': 'true',
+            'aria-label': 'Onboarding tour',
+            tabIndex: -1
           },
+          activeChild
+        ),
+        React__default.createElement(
+          'div',
+          { style: S.controls, onClick: function onClick(e) {
+              return e.stopPropagation();
+            } },
           React__default.createElement(
-            'div',
-            null,
-            React__default.createElement(
-              'div',
-              { onClick: this.handleNext },
-              activeChild
-            ),
-            React__default.createElement(core.MobileStepper, {
-              steps: childCount //maxSteps
-              , position: 'static',
-              activeStep: activeStep,
-              className: classes.stepper,
-              classes: {
-                dotActive: classes.dotActive
-              },
-              nextButton: React__default.createElement(
-                core.Button,
-                { size: 'small', onClick: this.handleNext, className: classes.text, 'aria-label': 'Done/Next' },
-                activeStep == childCount - 1 ? React__default.createElement(
-                  'p',
-                  null,
-                  'Done'
-                ) : React__default.createElement(
-                  'p',
-                  null,
-                  'Next'
-                )
-              ),
-              backButton: React__default.createElement(
-                core.Button,
-                { size: 'small', onClick: this.handleBack, disabled: activeStep === 0, className: classes.text, 'aria-label': 'Done/Next' },
-                activeStep == 0 ? React__default.createElement('p', null) : React__default.createElement(
-                  'p',
-                  null,
-                  'Back'
-                )
-              )
-            }),
-            React__default.createElement(
-              core.Button,
-              { size: 'small', onClick: this.handleClose, className: classes.skip },
-              ' SKIP '
-            )
+            'button',
+            {
+              style: S.navBtn(isFirst),
+              onClick: this.handleBack,
+              disabled: isFirst,
+              'aria-label': 'Previous step'
+            },
+            '\u2039'
+          ),
+          showDots ? childArray.map(function (_, i) {
+            return React__default.createElement('span', { key: i, style: S.dot(i === step), 'aria-hidden': 'true' });
+          }) : React__default.createElement(
+            'span',
+            { style: S.stepLabel },
+            step + 1,
+            ' / ',
+            childCount
+          ),
+          React__default.createElement(
+            'button',
+            {
+              style: isLast ? S.doneBtn : S.navBtn(false),
+              onClick: isLast ? this.handleClose : this.handleNext,
+              'aria-label': isLast ? 'Finish tour' : 'Next step'
+            },
+            isLast ? 'Done' : '›'
           )
+        ),
+        React__default.createElement(
+          'button',
+          {
+            style: S.skip,
+            onClick: this.handleClose,
+            'aria-label': 'Skip tour',
+            onMouseEnter: function onMouseEnter(e) {
+              e.currentTarget.style.color = 'rgba(255,255,255,0.85)';
+            },
+            onMouseLeave: function onMouseLeave(e) {
+              e.currentTarget.style.color = 'rgba(255,255,255,0.5)';
+            }
+          },
+          'Skip tour'
         )
       );
     }
@@ -561,7 +640,7 @@ var Onboarding = function (_Component) {
     value: function reset() {
       for (var obj in localStorage) {
         if (obj.startsWith(CONSTANTS.LOCALSTORAGE_FLAG_PREFIX)) {
-          localStorage.setItem(obj, "");
+          localStorage.setItem(obj, '');
         }
       }
       Onboarding.current && Onboarding.current.setState({ open: true, activeStep: 0 });
@@ -572,22 +651,7 @@ var Onboarding = function (_Component) {
 
 Onboarding.current = null;
 
-
-var _Onboarding = core.withStyles(styles$1, { withTheme: true })(Onboarding);
-
-var Onboarding$1 = _Onboarding;
-// module.exports.reset = _Onboarding.reset
-var OnboardingItem$2 = OnboardingItem$1;
-var OnboardingTag$1 = OnboardingTag;
-
-var src = {
-	Onboarding: Onboarding$1,
-	OnboardingItem: OnboardingItem$2,
-	OnboardingTag: OnboardingTag$1
-};
-
-exports.default = src;
-exports.Onboarding = Onboarding$1;
-exports.OnboardingItem = OnboardingItem$2;
-exports.OnboardingTag = OnboardingTag$1;
+exports.Onboarding = Onboarding;
+exports.OnboardingItem = OnboardingItem;
+exports.OnboardingTag = OnboardingTag;
 //# sourceMappingURL=index.js.map
