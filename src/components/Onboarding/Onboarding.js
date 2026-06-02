@@ -5,101 +5,12 @@ import OnboardingDiv from './onboarding-div'
 import OnboardingTag from './OnboardingTag'
 
 // Z-index layers:
-//   onboarding-div (dark spotlight)  99998
-//   overlay + arrow SVG              99999
-//   message box (white card)        100000
-//   controls + skip                 100001
+//   onboarding-div  (dark spotlight)   99998
+//   overlay         (interaction lock) 99999
+//   tooltip                           100000
+//   skip button                       100001
 
-const S = {
-  overlay: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    width: '100%',
-    height: '100%',
-    zIndex: 99999,
-    cursor: 'pointer',
-    outline: 'none',
-  },
-  // Solid dark pill so controls are clearly above the overlay, not lost in it
-  controls: {
-    position: 'fixed',
-    bottom: '32px',
-    left: '50%',
-    transform: 'translateX(-50%)',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    zIndex: 100001,
-    background: 'rgba(17, 17, 17, 0.78)',
-    border: '1px solid rgba(255,255,255,0.1)',
-    borderRadius: '40px',
-    padding: '8px 14px',
-    whiteSpace: 'nowrap',
-  },
-  navBtn: (disabled) => ({
-    background: 'none',
-    border: 'none',
-    color: disabled ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.9)',
-    fontSize: '22px',
-    lineHeight: '1',
-    cursor: disabled ? 'default' : 'pointer',
-    padding: '0',
-    width: '28px',
-    height: '28px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontFamily: 'system-ui, sans-serif',
-    transition: 'color 0.15s',
-    flexShrink: 0,
-  }),
-  // Solid white pill for the Done button — stands out clearly
-  doneBtn: {
-    background: 'white',
-    border: 'none',
-    borderRadius: '20px',
-    padding: '5px 16px',
-    color: '#111827',
-    fontSize: '13px',
-    fontFamily: 'system-ui, -apple-system, sans-serif',
-    fontWeight: 600,
-    letterSpacing: '0.2px',
-    cursor: 'pointer',
-    transition: 'opacity 0.15s',
-    flexShrink: 0,
-  },
-  dot: (active) => ({
-    width: active ? '8px' : '5px',
-    height: active ? '8px' : '5px',
-    borderRadius: '50%',
-    background: active ? 'white' : 'rgba(255,255,255,0.3)',
-    transition: 'all 0.25s ease',
-    flexShrink: 0,
-  }),
-  stepLabel: {
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: '12px',
-    fontFamily: 'system-ui, -apple-system, sans-serif',
-    minWidth: '40px',
-    textAlign: 'center',
-  },
-  skip: {
-    position: 'fixed',
-    bottom: '38px',
-    right: '32px',
-    background: 'none',
-    border: 'none',
-    color: 'rgba(255,255,255,0.5)',
-    fontSize: '12px',
-    fontFamily: 'system-ui, -apple-system, sans-serif',
-    cursor: 'pointer',
-    zIndex: 100001,
-    padding: '6px 8px',
-    letterSpacing: '0.3px',
-    transition: 'color 0.15s',
-  },
-};
+const FONT = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif';
 
 class Onboarding extends Component {
   static current = null;
@@ -107,27 +18,37 @@ class Onboarding extends Component {
   constructor(props) {
     super(props);
     Onboarding.current = this;
-    const demoFlag = localStorage.getItem(CONSTANTS.LOCALSTORAGE_FLAG_PREFIX + this.props.name);
+    // Start closed — componentDidMount reads localStorage (client-only) and opens if needed.
+    // This is SSR-safe: `open: false` means nothing renders on the server, preventing
+    // hydration mismatches in Next.js / React Server Components environments.
     this.state = {
       activeStep: 0,
-      open: demoFlag === null || demoFlag === '',
+      open: false,
     };
-    OnboardingDiv.create();
-    this._mountedHref = window.location.href;
+    this._mountedHref = '';
   }
 
   componentDidMount() {
-    document.addEventListener('keydown', this._handleKeyDown);
+    // All browser APIs (localStorage, document, window) are safe here — this hook
+    // never runs on the server, so no SSR crash in Next.js or similar frameworks.
+    OnboardingDiv.create();
+    this._mountedHref = window.location.href;
+    document.addEventListener('keydown', this._onKey);
+
+    const flag = localStorage.getItem(CONSTANTS.LOCALSTORAGE_FLAG_PREFIX + this.props.name);
+    if (flag === null || flag === '') {
+      this.setState({ open: true });
+    }
   }
 
   componentWillUnmount() {
-    document.removeEventListener('keydown', this._handleKeyDown);
+    document.removeEventListener('keydown', this._onKey);
     if (window.location.href !== this._mountedHref) {
       OnboardingDiv.clear();
     }
   }
 
-  _handleKeyDown = (e) => {
+  _onKey = (e) => {
     if (!this.state.open) return;
     if (e.key === 'Escape') this.handleClose();
     else if (e.key === 'ArrowRight' || e.key === 'Enter') this.handleNext();
@@ -135,11 +56,11 @@ class Onboarding extends Component {
   }
 
   static reset() {
-    for (let obj in localStorage) {
-      if (obj.startsWith(CONSTANTS.LOCALSTORAGE_FLAG_PREFIX)) {
-        localStorage.setItem(obj, '');
-      }
-    }
+    if (typeof localStorage === 'undefined') return;
+    // Object.keys() is safe — for...in iterates the prototype chain too
+    Object.keys(localStorage)
+      .filter(k => k.startsWith(CONSTANTS.LOCALSTORAGE_FLAG_PREFIX))
+      .forEach(k => localStorage.setItem(k, ''));
     Onboarding.current && Onboarding.current.setState({ open: true, activeStep: 0 });
   }
 
@@ -159,79 +80,87 @@ class Onboarding extends Component {
   }
 
   handleNext = () => {
-    const childArray = this._getChildArray();
-    if (this.state.activeStep >= childArray.length - 1) {
-      this.handleClose();
-    } else {
-      this.setState(prev => ({ activeStep: prev.activeStep + 1 }));
-    }
+    const total = this._getChildArray().length;
+    if (this.state.activeStep >= total - 1) this.handleClose();
+    else this.setState(s => ({ activeStep: s.activeStep + 1 }));
   }
 
   handleBack = () => {
-    if (this.state.activeStep > 0) {
-      this.setState(prev => ({ activeStep: prev.activeStep - 1 }));
-    }
+    if (this.state.activeStep > 0)
+      this.setState(s => ({ activeStep: s.activeStep - 1 }));
   }
 
   render() {
-    const { activeStep, open } = this.state;
+    const { open, activeStep } = this.state;
     if (!open) return null;
 
-    const childArray = this._getChildArray();
-    const childCount = childArray.length;
-    if (childCount === 0) return null;
+    const children = this._getChildArray();
+    const total = children.length;
+    if (total === 0) return null;
 
-    const step = Math.min(activeStep, childCount - 1);
-    const activeChild = childArray[step];
+    const step = Math.min(activeStep, total - 1);
     const isFirst = step === 0;
-    const isLast = step >= childCount - 1;
-    const showDots = childCount <= 10;
+    const isLast = step >= total - 1;
+
+    // Inject navigation props into the active child — OnboardingItem reads them
+    // to render its embedded Back/Next/Done controls and progress dots.
+    const activeChild = React.cloneElement(children[step], {
+      _onNext: this.handleNext,
+      _onBack: this.handleBack,
+      _onClose: this.handleClose,
+      _step: step,
+      _total: total,
+      _isFirst: isFirst,
+      _isLast: isLast,
+    });
 
     return (
       <Fragment>
-        {/* Full-screen click catcher — sits above the dark spotlight, contains the arrow SVG */}
+        {/* Full-screen overlay — blocks interaction with underlying page.
+            Clicking the dark area advances the tour (like a slide presentation). */}
         <div
-          style={S.overlay}
+          style={{
+            position: 'fixed',
+            top: 0, left: 0, right: 0, bottom: 0,
+            zIndex: 99999,
+            cursor: 'pointer',
+          }}
           onClick={this.handleNext}
           role="dialog"
           aria-modal="true"
           aria-label="Onboarding tour"
-          tabIndex={-1}
-        >
-          {activeChild}
-        </div>
+        />
 
-        {/* Controls pill — stop propagation so clicks here don't fire handleNext */}
-        <div style={S.controls} onClick={e => e.stopPropagation()}>
-          <button
-            style={S.navBtn(isFirst)}
-            onClick={this.handleBack}
-            disabled={isFirst}
-            aria-label="Previous step"
-          >
-            ‹
-          </button>
-
-          {showDots
-            ? childArray.map((_, i) => <span key={i} style={S.dot(i === step)} aria-hidden="true" />)
-            : <span style={S.stepLabel}>{step + 1} / {childCount}</span>
-          }
-
-          <button
-            style={isLast ? S.doneBtn : S.navBtn(false)}
-            onClick={isLast ? this.handleClose : this.handleNext}
-            aria-label={isLast ? 'Finish tour' : 'Next step'}
-          >
-            {isLast ? 'Done' : '›'}
-          </button>
-        </div>
+        {activeChild}
 
         <button
-          style={S.skip}
+          style={{
+            position: 'fixed',
+            bottom: 28,
+            right: 28,
+            zIndex: 100001,
+            background: 'rgba(0,0,0,0.45)',
+            border: '1px solid rgba(255,255,255,0.18)',
+            borderRadius: 20,
+            color: 'rgba(255,255,255,0.75)',
+            fontSize: 12,
+            fontFamily: FONT,
+            fontWeight: 500,
+            letterSpacing: '0.2px',
+            padding: '6px 14px',
+            cursor: 'pointer',
+            transition: 'background 0.15s, color 0.15s',
+          }}
           onClick={this.handleClose}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = 'rgba(0,0,0,0.65)';
+            e.currentTarget.style.color = '#fff';
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = 'rgba(0,0,0,0.45)';
+            e.currentTarget.style.color = 'rgba(255,255,255,0.75)';
+          }}
           aria-label="Skip tour"
-          onMouseEnter={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.85)'; }}
-          onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; }}
         >
           Skip tour
         </button>

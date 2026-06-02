@@ -71,22 +71,23 @@ var _class = function _class() {
 };
 
 _class.create = function () {
-  if (document.getElementById(CONSTANTS.ONBOARDING_DIV_ID) === null) {
-    var body = document.getElementsByTagName('body')[0];
-    var div = document.createElement('div');
-    div.id = CONSTANTS.ONBOARDING_DIV_ID;
-    div.style.position = 'fixed';
-    div.style.pointerEvents = 'none';
-    div.style.visibility = 'hidden';
-    // Keep below React root's z-index so the arrow SVG (rendered inside React) paints on top.
-    // onboarding-div is appended to <body> after the React root, so at equal z-index it would
-    // win the DOM-order paint race and cover the arrow — hence one level lower here.
-    div.style.zIndex = '99998';
-    body.appendChild(div);
-  }
+  if (typeof document === 'undefined') return;
+  if (document.getElementById(CONSTANTS.ONBOARDING_DIV_ID) !== null) return;
+
+  var div = document.createElement('div');
+  div.id = CONSTANTS.ONBOARDING_DIV_ID;
+  div.style.position = 'fixed';
+  div.style.pointerEvents = 'none';
+  div.style.visibility = 'hidden';
+  // Lower than React root's overlay (99999) so the tooltip SVG/caret paints on top.
+  // onboarding-div is appended after the React root in DOM order, so at equal z-index
+  // it would win the paint race — keeping it one level lower prevents that.
+  div.style.zIndex = '99998';
+  document.getElementsByTagName('body')[0].appendChild(div);
 };
 
 _class.setTarget = function (targetRect, disableArrow) {
+  if (typeof document === 'undefined') return;
   var div = document.getElementById(CONSTANTS.ONBOARDING_DIV_ID);
   if (!div || !targetRect) return;
 
@@ -98,19 +99,19 @@ _class.setTarget = function (targetRect, disableArrow) {
   div.style.width = targetRect.width + 'px';
   div.style.height = targetRect.height + 'px';
   div.style.zIndex = '99998';
+  div.style.boxShadow = '0 0 0 9999px rgba(0,0,0,0.68)';
 
   if (!disableArrow) {
     div.style.border = '2px solid rgba(255,255,255,0.8)';
     div.style.borderRadius = '6px';
-    div.style.boxShadow = '0 0 0 9999px rgba(0,0,0,0.68)';
   } else {
     div.style.border = 'none';
     div.style.borderRadius = '0';
-    div.style.boxShadow = '0 0 0 9999px rgba(0,0,0,0.68)';
   }
 };
 
 _class.clear = function () {
+  if (typeof document === 'undefined') return;
   var div = document.getElementById(CONSTANTS.ONBOARDING_DIV_ID);
   if (!div) return;
   div.style.visibility = 'hidden';
@@ -124,106 +125,116 @@ _class.clear = function () {
   div.style.zIndex = '-1';
 };
 
-var ArrowCurved = (function (props) {
-	var startBox = props.startBox,
-	    endBox = props.endBox,
-	    color = props.color,
-	    width = props.width;
-
-	var clr = color || "red";
-	var w = width || 2;
-	var arrowSize = 10;
-
-	if (!startBox || !endBox) return React__default.createElement(React__default.Fragment, null);
-
-	var startTop = startBox.bottom >= endBox.top;
-	var endTop = endBox.bottom + arrowSize * w >= startBox.top;
-	var start = {
-		x: startBox.left + startBox.width / 2,
-		y: startTop ? startBox.top : startBox.bottom
-	};
-	var end = {
-		x: endBox.left + endBox.width / 2,
-		y: endTop ? endBox.top - arrowSize * w : endBox.bottom + arrowSize * w
-	};
-	var cpt1 = {
-		x: start.x,
-		y: start.y + (end.y - start.y) / 2
-	};
-	var cpt2 = {
-		x: end.x,
-		y: end.y - (end.y - start.y) / 2
-	};
-	var cpt3 = {
-		x: (start.x + end.x) / 2,
-		y: Math.max(0, (start.y + end.y) / 2 - Math.abs(end.x - start.x))
-	};
-	var path = startTop && endTop ? "M " + start.x + " " + start.y + " Q " + cpt3.x + " " + cpt3.y + " " + end.x + " " + end.y : "M " + start.x + " " + start.y + " C " + cpt1.x + " " + cpt1.y + " " + cpt2.x + " " + cpt2.y + " " + end.x + " " + end.y;
-	return React__default.createElement(
-		"svg",
-		{ style: { position: "absolute" }, height: "100%", width: "100%" },
-		React__default.createElement(
-			"defs",
-			null,
-			React__default.createElement(
-				"marker",
-				{ id: "triangle", viewBox: "0 0 " + arrowSize + " " + arrowSize,
-					refX: "0", refY: arrowSize / 2,
-					markerUnits: "strokeWidth",
-					markerWidth: arrowSize, markerHeight: arrowSize,
-					orient: "auto" },
-				React__default.createElement("path", { d: "M 0 0 L " + arrowSize + " " + arrowSize / 2 + " L 0 " + arrowSize + " z", style: { fill: clr } })
-			)
-		),
-		React__default.createElement("path", { d: path,
-			style: {
-				stroke: clr,
-				strokeWidth: w + "px",
-				fill: "none",
-				markerEnd: "url(#triangle)",
-				transition: "all .5s ease-out"
-			}
-		})
-	);
-});
-
 /*eslint-disable*/
 
-if (typeof document !== 'undefined' && !document.getElementById('__ob_styles')) {
-  var style = document.createElement('style');
-  style.id = '__ob_styles';
-  style.textContent = '@keyframes obIn{from{opacity:0;transform:translate(-50%,-48%)}to{opacity:1;transform:translate(-50%,-50%)}} @keyframes obInTop{from{opacity:0}to{opacity:1}}';
-  document.head.appendChild(style);
+var TW = 308; // tooltip width px
+var GAP = 14; // gap between target and tooltip
+var EDGE = 14; // min distance from viewport edge
+
+// Returns { p, top, left } for the best non-clipping placement.
+// Guard for SSR — this function is only called from lifecycle methods (client-only)
+// but the guard prevents any accidental server-side call from crashing.
+function bestPlacement(targetRect, tooltipH) {
+  if (typeof window === 'undefined') return { p: 'bottom', top: 0, left: 0 };
+  var vw = window.innerWidth;
+  var vh = window.innerHeight;
+  var cx = targetRect.left + targetRect.width / 2;
+  var cy = targetRect.top + targetRect.height / 2;
+
+  var tries = [{ p: 'bottom', top: targetRect.bottom + GAP, left: cx - TW / 2 }, { p: 'top', top: targetRect.top - GAP - tooltipH, left: cx - TW / 2 }, { p: 'right', top: cy - tooltipH / 2, left: targetRect.right + GAP }, { p: 'left', top: cy - tooltipH / 2, left: targetRect.left - GAP - TW }];
+
+  var _iteratorNormalCompletion = true;
+  var _didIteratorError = false;
+  var _iteratorError = undefined;
+
+  try {
+    for (var _iterator = tries[Symbol.iterator](), _step2; !(_iteratorNormalCompletion = (_step2 = _iterator.next()).done); _iteratorNormalCompletion = true) {
+      var _ref = _step2.value;
+      var p = _ref.p,
+          _top = _ref.top,
+          _left = _ref.left;
+
+      var l = Math.max(EDGE, Math.min(vw - TW - EDGE, _left));
+      var t = Math.max(EDGE, Math.min(vh - tooltipH - EDGE, _top));
+      // Fits without needing to clamp → perfect placement
+      if (t === _top && l === _left) return { p: p, top: t, left: l };
+    }
+
+    // Nothing fits perfectly — fall back to below, clamped to screen
+  } catch (err) {
+    _didIteratorError = true;
+    _iteratorError = err;
+  } finally {
+    try {
+      if (!_iteratorNormalCompletion && _iterator.return) {
+        _iterator.return();
+      }
+    } finally {
+      if (_didIteratorError) {
+        throw _iteratorError;
+      }
+    }
+  }
+
+  var _tries$ = tries[0],
+      top = _tries$.top,
+      left = _tries$.left;
+
+  return {
+    p: 'bottom',
+    top: Math.max(EDGE, Math.min(vh - tooltipH - EDGE, top)),
+    left: Math.max(EDGE, Math.min(vw - TW - EDGE, left))
+  };
 }
 
-var getMsgBoxStyle = function getMsgBoxStyle(top) {
-  return {
-    position: 'fixed',
-    top: top !== undefined ? top : '50%',
-    left: '50%',
-    transform: top !== undefined ? 'translateX(-50%)' : 'translate(-50%, -50%)',
-    background: '#ffffff',
-    borderRadius: '12px',
-    padding: '24px 32px',
-    maxWidth: '320px',
-    width: 'calc(100vw - 64px)',
-    boxSizing: 'border-box',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.12), 0 20px 48px rgba(0,0,0,0.38)',
-    pointerEvents: 'none',
-    zIndex: 100000,
-    animation: top !== undefined ? 'obInTop 0.2s ease-out' : 'obIn 0.2s ease-out'
-  };
-};
+// Rotated-square CSS caret pointing toward the target element.
+function Caret(_ref2) {
+  var placement = _ref2.placement,
+      targetRect = _ref2.targetRect,
+      tooltipLeft = _ref2.tooltipLeft,
+      tooltipTop = _ref2.tooltipTop,
+      tooltipH = _ref2.tooltipH;
 
-var msgTextStyle = {
-  color: '#111827',
-  fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
-  fontSize: '15px',
-  fontWeight: 500,
-  lineHeight: 1.65,
-  margin: 0,
-  textAlign: 'center'
-};
+  if (!targetRect || !placement) return null;
+
+  var SZ = 11;
+  var HALF = SZ / 2;
+  var cx = targetRect.left + targetRect.width / 2;
+  var cy = targetRect.top + targetRect.height / 2;
+  var style = null;
+
+  if (placement === 'bottom') {
+    var x = Math.max(SZ + 6, Math.min(TW - SZ - 6, cx - tooltipLeft));
+    style = {
+      position: 'absolute', top: -(HALF + 1), left: x - HALF,
+      width: SZ, height: SZ, background: '#fff', transform: 'rotate(45deg)',
+      boxShadow: '-1px -1px 3px rgba(0,0,0,0.07)'
+    };
+  } else if (placement === 'top') {
+    var _x = Math.max(SZ + 6, Math.min(TW - SZ - 6, cx - tooltipLeft));
+    style = {
+      position: 'absolute', bottom: -(HALF + 1), left: _x - HALF,
+      width: SZ, height: SZ, background: '#fafafa', transform: 'rotate(45deg)',
+      boxShadow: '1px 1px 3px rgba(0,0,0,0.07)'
+    };
+  } else if (placement === 'right') {
+    var y = Math.max(SZ + 6, Math.min(tooltipH - SZ - 6, cy - tooltipTop));
+    style = {
+      position: 'absolute', left: -(HALF + 1), top: y - HALF,
+      width: SZ, height: SZ, background: '#fff', transform: 'rotate(45deg)',
+      boxShadow: '-1px 1px 3px rgba(0,0,0,0.07)'
+    };
+  } else if (placement === 'left') {
+    var _y = Math.max(SZ + 6, Math.min(tooltipH - SZ - 6, cy - tooltipTop));
+    style = {
+      position: 'absolute', right: -(HALF + 1), top: _y - HALF,
+      width: SZ, height: SZ, background: '#fafafa', transform: 'rotate(45deg)',
+      boxShadow: '1px -1px 3px rgba(0,0,0,0.07)'
+    };
+  }
+
+  return style ? React__default.createElement('div', { style: style }) : null;
+}
 
 var OnboardingItem = function (_Component) {
   inherits(OnboardingItem, _Component);
@@ -233,79 +244,77 @@ var OnboardingItem = function (_Component) {
 
     var _this = possibleConstructorReturn(this, (OnboardingItem.__proto__ || Object.getPrototypeOf(OnboardingItem)).call(this, props));
 
-    _this._onResize = function () {
-      // Throttle via rAF so rapid scroll/resize bursts don't cause continuous re-renders
+    _this._schedule = function () {
       if (_this._raf) cancelAnimationFrame(_this._raf);
-      _this._raf = requestAnimationFrame(_this.computeStartEndPosition);
+      _this._raf = requestAnimationFrame(_this._compute);
     };
 
-    _this.computeStartEndPosition = function () {
+    _this._compute = function () {
       var _this$props = _this.props,
           elementID = _this$props.elementID,
           elementCoOrdinate = _this$props.elementCoOrdinate;
 
-      // Read both rects before calling setState so both go into a single update —
-      // two separate setState calls would cause two renders; the first would briefly
-      // render the arrow with one stale rect, causing visible flicker.
-
-      var msgBoxRect = _this.msgBox.current && _this.msgBox.current.getBoundingClientRect ? _this.msgBox.current.getBoundingClientRect() : _this.state.msgBoxRect;
 
       var el = typeof elementID === 'string' ? document.getElementById(elementID) : (typeof elementID === 'undefined' ? 'undefined' : _typeof(elementID)) === 'object' ? elementID : null;
 
       var targetRect = null;
       if ((typeof elementCoOrdinate === 'undefined' ? 'undefined' : _typeof(elementCoOrdinate)) === 'object' && elementCoOrdinate !== null) {
-        targetRect = {
-          left: elementCoOrdinate.l || 0,
-          top: elementCoOrdinate.t || 0,
-          width: elementCoOrdinate.w || 0,
-          height: elementCoOrdinate.h || 0,
-          right: (elementCoOrdinate.l || 0) + (elementCoOrdinate.w || 0),
-          bottom: (elementCoOrdinate.t || 0) + (elementCoOrdinate.h || 0)
-        };
-      } else if (typeof elementID === 'string' || (typeof elementID === 'undefined' ? 'undefined' : _typeof(elementID)) === 'object') {
-        targetRect = el && el.getBoundingClientRect ? el.getBoundingClientRect() : null;
+        var _elementCoOrdinate$l = elementCoOrdinate.l,
+            l = _elementCoOrdinate$l === undefined ? 0 : _elementCoOrdinate$l,
+            _elementCoOrdinate$t = elementCoOrdinate.t,
+            t = _elementCoOrdinate$t === undefined ? 0 : _elementCoOrdinate$t,
+            _elementCoOrdinate$w = elementCoOrdinate.w,
+            w = _elementCoOrdinate$w === undefined ? 0 : _elementCoOrdinate$w,
+            _elementCoOrdinate$h = elementCoOrdinate.h,
+            h = _elementCoOrdinate$h === undefined ? 0 : _elementCoOrdinate$h;
+
+        targetRect = { left: l, top: t, width: w, height: h, right: l + w, bottom: t + h };
+      } else if (el && el.getBoundingClientRect) {
+        targetRect = el.getBoundingClientRect();
       }
 
-      // Direct DOM update first — spotlight repositions immediately without waiting for setState
+      // Update spotlight immediately (direct DOM — no setState lag)
       _class.setTarget(targetRect, _this.props.disableArrow);
 
-      // Single batched setState — one render, no intermediate flicker state
-      _this.setState({ msgBoxRect: msgBoxRect, targetRect: targetRect });
+      if (!targetRect) {
+        _this.setState({ targetRect: null, pos: null, ready: true });
+        return;
+      }
+
+      // Measure actual tooltip height from previous render (first render uses estimate 140)
+      var tooltipH = _this.tooltipRef.current ? _this.tooltipRef.current.offsetHeight : 140;
+
+      var pos = bestPlacement(targetRect, tooltipH);
+      _this.setState({ targetRect: targetRect, pos: pos, ready: true });
     };
 
-    _this.msgBox = React__default.createRef();
+    _this.tooltipRef = React__default.createRef();
     _this._raf = null;
-    _this.state = {
-      msgBoxRect: null,
-      targetRect: null,
-      disableArrow: props.disableArrow !== undefined ? props.disableArrow : false
-    };
+    _this.state = { targetRect: null, pos: null, ready: false };
     return _this;
   }
 
   createClass(OnboardingItem, [{
     key: 'componentDidMount',
     value: function componentDidMount() {
-      this.computeStartEndPosition();
-      window.addEventListener('resize', this._onResize);
-      // Bubble phase only — avoids firing for every scroll inside nested elements
-      window.addEventListener('scroll', this._onResize);
+      this._compute();
+      window.addEventListener('resize', this._schedule);
+      window.addEventListener('scroll', this._schedule);
     }
   }, {
     key: 'componentWillUnmount',
     value: function componentWillUnmount() {
-      window.removeEventListener('resize', this._onResize);
-      window.removeEventListener('scroll', this._onResize);
+      window.removeEventListener('resize', this._schedule);
+      window.removeEventListener('scroll', this._schedule);
       if (this._raf) cancelAnimationFrame(this._raf);
     }
   }, {
     key: 'componentDidUpdate',
     value: function componentDidUpdate(prevProps, prevState) {
       if (prevProps.elementID !== this.props.elementID || prevProps.elementCoOrdinate !== this.props.elementCoOrdinate) {
-        this.computeStartEndPosition();
+        this._compute();
         return;
       }
-      // Update spotlight when targetRect changes — kept out of render() to avoid side-effect in render
       if (prevState.targetRect !== this.state.targetRect) {
         _class.setTarget(this.state.targetRect, this.props.disableArrow);
       }
@@ -313,28 +322,187 @@ var OnboardingItem = function (_Component) {
   }, {
     key: 'render',
     value: function render() {
-      // NOTE: no OnboardingDiv.setTarget here — side effects in render() cause flicker
-      // because React may call render() multiple times before committing.
-      var _state = this.state,
-          msgBoxRect = _state.msgBoxRect,
-          targetRect = _state.targetRect,
-          disableArrow = _state.disableArrow;
       var _props = this.props,
           message = _props.message,
-          top = _props.top;
+          _onNext = _props._onNext,
+          _onBack = _props._onBack,
+          _step = _props._step,
+          _total = _props._total,
+          _isFirst = _props._isFirst,
+          _isLast = _props._isLast;
+      var _state = this.state,
+          pos = _state.pos,
+          targetRect = _state.targetRect,
+          ready = _state.ready;
 
+
+      var hasNav = _onNext !== undefined;
+      var showDots = _total !== undefined && _total <= 10;
+
+      // Outer wrapper: positioned (caret hangs outside, so overflow: visible)
+      var outerStyle = pos ? {
+        position: 'fixed',
+        top: pos.top,
+        left: pos.left,
+        width: TW,
+        zIndex: 100000,
+        opacity: ready ? 1 : 0,
+        transition: 'opacity 0.18s ease',
+        // Smooth relocation when target changes between steps
+        willChange: 'top, left'
+      } : {
+        // No target: center on screen
+        position: 'fixed',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        width: TW,
+        zIndex: 100000,
+        opacity: ready ? 1 : 0,
+        transition: 'opacity 0.18s ease'
+      };
+
+      // Body: rounded, clipped, shadow
+      var bodyStyle = {
+        borderRadius: 12,
+        overflow: 'hidden',
+        background: '#ffffff',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 16px 36px rgba(0,0,0,0.22)'
+      };
+
+      var FONT = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif';
 
       return React__default.createElement(
-        React.Fragment,
-        null,
-        !disableArrow && React__default.createElement(ArrowCurved, { color: 'white', width: 2, startBox: msgBoxRect, endBox: targetRect }),
+        'div',
+        {
+          ref: this.tooltipRef,
+          style: outerStyle,
+          onClick: function onClick(e) {
+            return e.stopPropagation();
+          }
+        },
+        pos && React__default.createElement(Caret, {
+          placement: pos.p,
+          targetRect: targetRect,
+          tooltipLeft: pos.left,
+          tooltipTop: pos.top,
+          tooltipH: this.tooltipRef.current ? this.tooltipRef.current.offsetHeight : 140
+        }),
         React__default.createElement(
           'div',
-          { ref: this.msgBox, style: getMsgBoxStyle(top) },
+          { style: bodyStyle },
           React__default.createElement(
-            'p',
-            { style: msgTextStyle },
-            message
+            'div',
+            { style: { background: '#fff', padding: '22px 24px 14px' } },
+            React__default.createElement(
+              'p',
+              { style: {
+                  margin: 0,
+                  color: '#1f2937',
+                  fontFamily: FONT,
+                  fontSize: 14,
+                  fontWeight: 400,
+                  lineHeight: 1.65,
+                  textAlign: 'center'
+                } },
+              message
+            )
+          ),
+          hasNav && React__default.createElement(
+            'div',
+            { style: {
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '9px 14px',
+                background: '#fafafa',
+                borderTop: '1px solid #f3f4f6'
+              } },
+            React__default.createElement(
+              'button',
+              {
+                disabled: _isFirst,
+                onClick: _onBack,
+                style: {
+                  background: 'none',
+                  border: 'none',
+                  padding: '3px 0',
+                  color: _isFirst ? '#e5e7eb' : '#6b7280',
+                  fontSize: 13,
+                  fontWeight: 500,
+                  cursor: _isFirst ? 'default' : 'pointer',
+                  fontFamily: FONT,
+                  minWidth: 48,
+                  textAlign: 'left',
+                  lineHeight: 1
+                }
+              },
+              '\u2190 Back'
+            ),
+            showDots ? React__default.createElement(
+              'div',
+              { style: { display: 'flex', gap: 4, alignItems: 'center' } },
+              Array.from({ length: _total }, function (_, i) {
+                return React__default.createElement('span', { key: i, style: {
+                    display: 'block',
+                    width: i === _step ? 7 : 5,
+                    height: i === _step ? 7 : 5,
+                    borderRadius: '50%',
+                    background: i === _step ? '#111827' : '#d1d5db',
+                    transition: 'all 0.2s ease',
+                    flexShrink: 0
+                  } });
+              })
+            ) : React__default.createElement(
+              'span',
+              { style: {
+                  color: '#9ca3af',
+                  fontSize: 12,
+                  fontFamily: FONT
+                } },
+              _step + 1,
+              ' / ',
+              _total
+            ),
+            _isLast ? React__default.createElement(
+              'button',
+              {
+                onClick: _onNext,
+                style: {
+                  background: '#111827',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 7,
+                  padding: '5px 14px',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontFamily: FONT,
+                  minWidth: 48,
+                  lineHeight: 1
+                }
+              },
+              'Done'
+            ) : React__default.createElement(
+              'button',
+              {
+                onClick: _onNext,
+                style: {
+                  background: 'none',
+                  border: 'none',
+                  padding: '3px 0',
+                  color: '#374151',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontFamily: FONT,
+                  minWidth: 48,
+                  textAlign: 'right',
+                  lineHeight: 1
+                }
+              },
+              'Next \u2192'
+            )
           )
         )
       );
@@ -379,105 +547,12 @@ OnboardingTag.TagItems = _tagItems;
 /*eslint-disable*/
 
 // Z-index layers:
-//   onboarding-div (dark spotlight)  99998
-//   overlay + arrow SVG              99999
-//   message box (white card)        100000
-//   controls + skip                 100001
+//   onboarding-div  (dark spotlight)   99998
+//   overlay         (interaction lock) 99999
+//   tooltip                           100000
+//   skip button                       100001
 
-var S = {
-  overlay: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    width: '100%',
-    height: '100%',
-    zIndex: 99999,
-    cursor: 'pointer',
-    outline: 'none'
-  },
-  // Solid dark pill so controls are clearly above the overlay, not lost in it
-  controls: {
-    position: 'fixed',
-    bottom: '32px',
-    left: '50%',
-    transform: 'translateX(-50%)',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    zIndex: 100001,
-    background: 'rgba(17, 17, 17, 0.78)',
-    border: '1px solid rgba(255,255,255,0.1)',
-    borderRadius: '40px',
-    padding: '8px 14px',
-    whiteSpace: 'nowrap'
-  },
-  navBtn: function navBtn(disabled) {
-    return {
-      background: 'none',
-      border: 'none',
-      color: disabled ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.9)',
-      fontSize: '22px',
-      lineHeight: '1',
-      cursor: disabled ? 'default' : 'pointer',
-      padding: '0',
-      width: '28px',
-      height: '28px',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontFamily: 'system-ui, sans-serif',
-      transition: 'color 0.15s',
-      flexShrink: 0
-    };
-  },
-  // Solid white pill for the Done button — stands out clearly
-  doneBtn: {
-    background: 'white',
-    border: 'none',
-    borderRadius: '20px',
-    padding: '5px 16px',
-    color: '#111827',
-    fontSize: '13px',
-    fontFamily: 'system-ui, -apple-system, sans-serif',
-    fontWeight: 600,
-    letterSpacing: '0.2px',
-    cursor: 'pointer',
-    transition: 'opacity 0.15s',
-    flexShrink: 0
-  },
-  dot: function dot(active) {
-    return {
-      width: active ? '8px' : '5px',
-      height: active ? '8px' : '5px',
-      borderRadius: '50%',
-      background: active ? 'white' : 'rgba(255,255,255,0.3)',
-      transition: 'all 0.25s ease',
-      flexShrink: 0
-    };
-  },
-  stepLabel: {
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: '12px',
-    fontFamily: 'system-ui, -apple-system, sans-serif',
-    minWidth: '40px',
-    textAlign: 'center'
-  },
-  skip: {
-    position: 'fixed',
-    bottom: '38px',
-    right: '32px',
-    background: 'none',
-    border: 'none',
-    color: 'rgba(255,255,255,0.5)',
-    fontSize: '12px',
-    fontFamily: 'system-ui, -apple-system, sans-serif',
-    cursor: 'pointer',
-    zIndex: 100001,
-    padding: '6px 8px',
-    letterSpacing: '0.3px',
-    transition: 'color 0.15s'
-  }
-};
+var FONT = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif';
 
 var Onboarding = function (_Component) {
   inherits(Onboarding, _Component);
@@ -487,7 +562,7 @@ var Onboarding = function (_Component) {
 
     var _this = possibleConstructorReturn(this, (Onboarding.__proto__ || Object.getPrototypeOf(Onboarding)).call(this, props));
 
-    _this._handleKeyDown = function (e) {
+    _this._onKey = function (e) {
       if (!_this.state.open) return;
       if (e.key === 'Escape') _this.handleClose();else if (e.key === 'ArrowRight' || e.key === 'Enter') _this.handleNext();else if (e.key === 'ArrowLeft') _this.handleBack();
     };
@@ -508,44 +583,48 @@ var Onboarding = function (_Component) {
     };
 
     _this.handleNext = function () {
-      var childArray = _this._getChildArray();
-      if (_this.state.activeStep >= childArray.length - 1) {
-        _this.handleClose();
-      } else {
-        _this.setState(function (prev) {
-          return { activeStep: prev.activeStep + 1 };
-        });
-      }
+      var total = _this._getChildArray().length;
+      if (_this.state.activeStep >= total - 1) _this.handleClose();else _this.setState(function (s) {
+        return { activeStep: s.activeStep + 1 };
+      });
     };
 
     _this.handleBack = function () {
-      if (_this.state.activeStep > 0) {
-        _this.setState(function (prev) {
-          return { activeStep: prev.activeStep - 1 };
-        });
-      }
+      if (_this.state.activeStep > 0) _this.setState(function (s) {
+        return { activeStep: s.activeStep - 1 };
+      });
     };
 
     Onboarding.current = _this;
-    var demoFlag = localStorage.getItem(CONSTANTS.LOCALSTORAGE_FLAG_PREFIX + _this.props.name);
+    // Start closed — componentDidMount reads localStorage (client-only) and opens if needed.
+    // This is SSR-safe: `open: false` means nothing renders on the server, preventing
+    // hydration mismatches in Next.js / React Server Components environments.
     _this.state = {
       activeStep: 0,
-      open: demoFlag === null || demoFlag === ''
+      open: false
     };
-    _class.create();
-    _this._mountedHref = window.location.href;
+    _this._mountedHref = '';
     return _this;
   }
 
   createClass(Onboarding, [{
     key: 'componentDidMount',
     value: function componentDidMount() {
-      document.addEventListener('keydown', this._handleKeyDown);
+      // All browser APIs (localStorage, document, window) are safe here — this hook
+      // never runs on the server, so no SSR crash in Next.js or similar frameworks.
+      _class.create();
+      this._mountedHref = window.location.href;
+      document.addEventListener('keydown', this._onKey);
+
+      var flag = localStorage.getItem(CONSTANTS.LOCALSTORAGE_FLAG_PREFIX + this.props.name);
+      if (flag === null || flag === '') {
+        this.setState({ open: true });
+      }
     }
   }, {
     key: 'componentWillUnmount',
     value: function componentWillUnmount() {
-      document.removeEventListener('keydown', this._handleKeyDown);
+      document.removeEventListener('keydown', this._onKey);
       if (window.location.href !== this._mountedHref) {
         _class.clear();
       }
@@ -554,82 +633,77 @@ var Onboarding = function (_Component) {
     key: 'render',
     value: function render() {
       var _state = this.state,
-          activeStep = _state.activeStep,
-          open = _state.open;
+          open = _state.open,
+          activeStep = _state.activeStep;
 
       if (!open) return null;
 
-      var childArray = this._getChildArray();
-      var childCount = childArray.length;
-      if (childCount === 0) return null;
+      var children = this._getChildArray();
+      var total = children.length;
+      if (total === 0) return null;
 
-      var step = Math.min(activeStep, childCount - 1);
-      var activeChild = childArray[step];
+      var step = Math.min(activeStep, total - 1);
       var isFirst = step === 0;
-      var isLast = step >= childCount - 1;
-      var showDots = childCount <= 10;
+      var isLast = step >= total - 1;
+
+      // Inject navigation props into the active child — OnboardingItem reads them
+      // to render its embedded Back/Next/Done controls and progress dots.
+      var activeChild = React__default.cloneElement(children[step], {
+        _onNext: this.handleNext,
+        _onBack: this.handleBack,
+        _onClose: this.handleClose,
+        _step: step,
+        _total: total,
+        _isFirst: isFirst,
+        _isLast: isLast
+      });
 
       return React__default.createElement(
         React.Fragment,
         null,
-        React__default.createElement(
-          'div',
-          {
-            style: S.overlay,
-            onClick: this.handleNext,
-            role: 'dialog',
-            'aria-modal': 'true',
-            'aria-label': 'Onboarding tour',
-            tabIndex: -1
+        React__default.createElement('div', {
+          style: {
+            position: 'fixed',
+            top: 0, left: 0, right: 0, bottom: 0,
+            zIndex: 99999,
+            cursor: 'pointer'
           },
-          activeChild
-        ),
-        React__default.createElement(
-          'div',
-          { style: S.controls, onClick: function onClick(e) {
-              return e.stopPropagation();
-            } },
-          React__default.createElement(
-            'button',
-            {
-              style: S.navBtn(isFirst),
-              onClick: this.handleBack,
-              disabled: isFirst,
-              'aria-label': 'Previous step'
-            },
-            '\u2039'
-          ),
-          showDots ? childArray.map(function (_, i) {
-            return React__default.createElement('span', { key: i, style: S.dot(i === step), 'aria-hidden': 'true' });
-          }) : React__default.createElement(
-            'span',
-            { style: S.stepLabel },
-            step + 1,
-            ' / ',
-            childCount
-          ),
-          React__default.createElement(
-            'button',
-            {
-              style: isLast ? S.doneBtn : S.navBtn(false),
-              onClick: isLast ? this.handleClose : this.handleNext,
-              'aria-label': isLast ? 'Finish tour' : 'Next step'
-            },
-            isLast ? 'Done' : '›'
-          )
-        ),
+          onClick: this.handleNext,
+          role: 'dialog',
+          'aria-modal': 'true',
+          'aria-label': 'Onboarding tour'
+        }),
+        activeChild,
         React__default.createElement(
           'button',
           {
-            style: S.skip,
+            style: {
+              position: 'fixed',
+              bottom: 28,
+              right: 28,
+              zIndex: 100001,
+              background: 'rgba(0,0,0,0.45)',
+              border: '1px solid rgba(255,255,255,0.18)',
+              borderRadius: 20,
+              color: 'rgba(255,255,255,0.75)',
+              fontSize: 12,
+              fontFamily: FONT,
+              fontWeight: 500,
+              letterSpacing: '0.2px',
+              padding: '6px 14px',
+              cursor: 'pointer',
+              transition: 'background 0.15s, color 0.15s'
+            },
             onClick: this.handleClose,
-            'aria-label': 'Skip tour',
             onMouseEnter: function onMouseEnter(e) {
-              e.currentTarget.style.color = 'rgba(255,255,255,0.85)';
+              e.currentTarget.style.background = 'rgba(0,0,0,0.65)';
+              e.currentTarget.style.color = '#fff';
             },
             onMouseLeave: function onMouseLeave(e) {
-              e.currentTarget.style.color = 'rgba(255,255,255,0.5)';
-            }
+              e.currentTarget.style.background = 'rgba(0,0,0,0.45)';
+              e.currentTarget.style.color = 'rgba(255,255,255,0.75)';
+            },
+            'aria-label': 'Skip tour'
           },
           'Skip tour'
         )
@@ -638,11 +712,13 @@ var Onboarding = function (_Component) {
   }], [{
     key: 'reset',
     value: function reset() {
-      for (var obj in localStorage) {
-        if (obj.startsWith(CONSTANTS.LOCALSTORAGE_FLAG_PREFIX)) {
-          localStorage.setItem(obj, '');
-        }
-      }
+      if (typeof localStorage === 'undefined') return;
+      // Object.keys() is safe — for...in iterates the prototype chain too
+      Object.keys(localStorage).filter(function (k) {
+        return k.startsWith(CONSTANTS.LOCALSTORAGE_FLAG_PREFIX);
+      }).forEach(function (k) {
+        return localStorage.setItem(k, '');
+      });
       Onboarding.current && Onboarding.current.setState({ open: true, activeStep: 0 });
     }
   }]);
