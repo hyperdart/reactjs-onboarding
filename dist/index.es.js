@@ -319,6 +319,7 @@ var OnboardingItem = function (_Component) {
           message = _props.message,
           _onNext = _props._onNext,
           _onBack = _props._onBack,
+          _onClose = _props._onClose,
           _step = _props._step,
           _total = _props._total,
           _isFirst = _props._isFirst,
@@ -360,7 +361,8 @@ var OnboardingItem = function (_Component) {
         borderRadius: 12,
         overflow: 'hidden',
         background: '#ffffff',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 16px 36px rgba(0,0,0,0.22)'
+        boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 16px 36px rgba(0,0,0,0.22)',
+        position: 'relative'
       };
 
       var FONT = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif';
@@ -384,9 +386,44 @@ var OnboardingItem = function (_Component) {
         React.createElement(
           'div',
           { style: bodyStyle },
+          _onClose && React.createElement(
+            'button',
+            {
+              onClick: _onClose,
+              style: {
+                position: 'absolute',
+                top: 2,
+                right: 8,
+                width: 30,
+                height: 30,
+                borderRadius: 6,
+                border: 'none',
+                background: 'transparent',
+                color: '#374151',
+                fontSize: 26,
+                fontFamily: FONT,
+                fontWeight: 300,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                lineHeight: 1,
+                padding: 0,
+                zIndex: 1
+              },
+              onMouseEnter: function onMouseEnter(e) {
+                e.currentTarget.style.background = '#f3f4f6';
+              },
+              onMouseLeave: function onMouseLeave(e) {
+                e.currentTarget.style.background = 'transparent';
+              },
+              'aria-label': 'Skip tour'
+            },
+            '\xD7'
+          ),
           React.createElement(
             'div',
-            { style: { background: '#fff', padding: '22px 24px 14px' } },
+            { style: { background: '#fff', padding: '22px 52px 14px 24px' } },
             React.createElement(
               'p',
               { style: {
@@ -543,9 +580,6 @@ OnboardingTag.TagItems = _tagItems;
 //   onboarding-div  (dark spotlight)   99998
 //   overlay         (interaction lock) 99999
 //   tooltip                           100000
-//   skip button                       100001
-
-var FONT = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif';
 
 var Onboarding = function (_Component) {
   inherits(Onboarding, _Component);
@@ -666,40 +700,7 @@ var Onboarding = function (_Component) {
           'aria-modal': 'true',
           'aria-label': 'Onboarding tour'
         }),
-        activeChild,
-        React.createElement(
-          'button',
-          {
-            style: {
-              position: 'fixed',
-              bottom: 28,
-              right: 28,
-              zIndex: 100001,
-              background: 'rgba(0,0,0,0.45)',
-              border: '1px solid rgba(255,255,255,0.18)',
-              borderRadius: 20,
-              color: 'rgba(255,255,255,0.75)',
-              fontSize: 12,
-              fontFamily: FONT,
-              fontWeight: 500,
-              letterSpacing: '0.2px',
-              padding: '6px 14px',
-              cursor: 'pointer',
-              transition: 'background 0.15s, color 0.15s'
-            },
-            onClick: this.handleClose,
-            onMouseEnter: function onMouseEnter(e) {
-              e.currentTarget.style.background = 'rgba(0,0,0,0.65)';
-              e.currentTarget.style.color = '#fff';
-            },
-            onMouseLeave: function onMouseLeave(e) {
-              e.currentTarget.style.background = 'rgba(0,0,0,0.45)';
-              e.currentTarget.style.color = 'rgba(255,255,255,0.75)';
-            },
-            'aria-label': 'Skip tour'
-          },
-          'Skip tour'
-        )
+        activeChild
       );
     }
   }], [{

@@ -153,7 +153,7 @@ class OnboardingItem extends Component {
   }
 
   render() {
-    const { message, _onNext, _onBack, _step, _total, _isFirst, _isLast } = this.props;
+    const { message, _onNext, _onBack, _onClose, _step, _total, _isFirst, _isLast } = this.props;
     const { pos, targetRect, ready } = this.state;
 
     const hasNav = _onNext !== undefined;
@@ -190,6 +190,7 @@ class OnboardingItem extends Component {
       overflow: 'hidden',
       background: '#ffffff',
       boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 16px 36px rgba(0,0,0,0.22)',
+      position: 'relative',
     };
 
     const FONT = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif';
@@ -210,8 +211,41 @@ class OnboardingItem extends Component {
         />}
 
         <div style={bodyStyle}>
-          {/* Message */}
-          <div style={{ background: '#fff', padding: '22px 24px 14px' }}>
+          {/* Skip button — top-right of card */}
+          {_onClose && (
+            <button
+              onClick={_onClose}
+              style={{
+                position: 'absolute',
+                top: 2,
+                right: 8,
+                width: 30,
+                height: 30,
+                borderRadius: 6,
+                border: 'none',
+                background: 'transparent',
+                color: '#374151',
+                fontSize: 26,
+                fontFamily: FONT,
+                fontWeight: 300,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                lineHeight: 1,
+                padding: 0,
+                zIndex: 1,
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#f3f4f6'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+              aria-label="Skip tour"
+            >
+              ×
+            </button>
+          )}
+
+          {/* Message — right padding leaves room for the Skip button */}
+          <div style={{ background: '#fff', padding: '22px 52px 14px 24px' }}>
             <p style={{
               margin: 0,
               color: '#1f2937',

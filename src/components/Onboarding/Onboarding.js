@@ -8,9 +8,6 @@ import OnboardingTag from './OnboardingTag'
 //   onboarding-div  (dark spotlight)   99998
 //   overlay         (interaction lock) 99999
 //   tooltip                           100000
-//   skip button                       100001
-
-const FONT = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif';
 
 class Onboarding extends Component {
   static current = null;
@@ -132,38 +129,6 @@ class Onboarding extends Component {
         />
 
         {activeChild}
-
-        <button
-          style={{
-            position: 'fixed',
-            bottom: 28,
-            right: 28,
-            zIndex: 100001,
-            background: 'rgba(0,0,0,0.45)',
-            border: '1px solid rgba(255,255,255,0.18)',
-            borderRadius: 20,
-            color: 'rgba(255,255,255,0.75)',
-            fontSize: 12,
-            fontFamily: FONT,
-            fontWeight: 500,
-            letterSpacing: '0.2px',
-            padding: '6px 14px',
-            cursor: 'pointer',
-            transition: 'background 0.15s, color 0.15s',
-          }}
-          onClick={this.handleClose}
-          onMouseEnter={e => {
-            e.currentTarget.style.background = 'rgba(0,0,0,0.65)';
-            e.currentTarget.style.color = '#fff';
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.background = 'rgba(0,0,0,0.45)';
-            e.currentTarget.style.color = 'rgba(255,255,255,0.75)';
-          }}
-          aria-label="Skip tour"
-        >
-          Skip tour
-        </button>
       </Fragment>
     );
   }
