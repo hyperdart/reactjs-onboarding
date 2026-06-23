@@ -87,6 +87,8 @@ class OnboardingItem extends Component {
     super(props);
     this.tooltipRef = React.createRef();
     this._raf = null;
+    this._scrollTimeout = null;
+    this._scrollingToTarget = false;
     this.state = { targetRect: null, pos: null, ready: false };
   }
 
@@ -100,6 +102,7 @@ class OnboardingItem extends Component {
     window.removeEventListener('resize', this._schedule);
     window.removeEventListener('scroll', this._schedule);
     if (this._raf) cancelAnimationFrame(this._raf);
+    clearTimeout(this._scrollTimeout);
   }
 
   componentDidUpdate(prevProps, prevState) {
@@ -107,6 +110,8 @@ class OnboardingItem extends Component {
       prevProps.elementID !== this.props.elementID ||
       prevProps.elementCoOrdinate !== this.props.elementCoOrdinate
     ) {
+      this._scrollingToTarget = false;
+      clearTimeout(this._scrollTimeout);
       this._compute();
       return;
     }
@@ -121,11 +126,33 @@ class OnboardingItem extends Component {
   }
 
   _compute = () => {
+    // Don't update mid-scroll — let the timeout recompute once settled
+    if (this._scrollingToTarget) return;
+
     const { elementID, elementCoOrdinate } = this.props;
 
     const el = typeof elementID === 'string'
       ? document.getElementById(elementID)
       : (typeof elementID === 'object' ? elementID : null);
+
+    // Scroll into view if the element is fully or partially outside the viewport.
+    if (el && el.getBoundingClientRect && !elementCoOrdinate) {
+      const r = el.getBoundingClientRect();
+      const vh = window.innerHeight;
+      const vw = window.innerWidth;
+      if (r.top < 0 || r.bottom > vh || r.left < 0 || r.right > vw) {
+        this._scrollingToTarget = true;
+        OnboardingDiv.hide();
+        this.setState({ ready: false });
+        el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+        clearTimeout(this._scrollTimeout);
+        this._scrollTimeout = setTimeout(() => {
+          this._scrollingToTarget = false;
+          this._compute();
+        }, 450);
+        return;
+      }
+    }
 
     let targetRect = null;
     if (typeof elementCoOrdinate === 'object' && elementCoOrdinate !== null) {

@@ -1,121 +1,175 @@
 # reactjs-onboarding
 
-
-
-> The reactjs-onboarding library exported as Node.js modules.
+> A lightweight, zero-dependency product tour library for React.
 
 [![NPM](https://img.shields.io/npm/v/reactjs-onboarding.svg)](https://www.npmjs.com/package/reactjs-onboarding) [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
 
+![Demo](https://raw.githubusercontent.com/hyperdart/reactjs-onboarding/master/assets/demo.gif)
 
-![grab-landing-page](https://media.giphy.com/media/hQu9D1RzMJolsjtvbL/giphy.gif)
+---
+
+## Features
+
+- Auto-starts on first visit — no manual state management needed
+- Persists completion in `localStorage` per tour name
+- Scrolls off-screen elements into view automatically
+- Smart tooltip placement (bottom → top → right → left)
+- Keyboard navigation: `→` / `Enter` next, `←` back, `Esc` close
+- Three targeting modes: element ID, DOM ref, or manual coordinates
+- No external dependencies
+
+---
 
 ## Installation
 
+```bash
+npm install reactjs-onboarding
+```
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
-
-**1)** This github repository, using ```git clone```
-
-**2)** Using npm ```npm install reactjs-onboarding.js --save```
-
+---
 
 ## Usage
 
+### 1. Target by element ID
 
-reactjs-onboarding.js can be added to your project in four simple steps:
-
-
-
-**1)** Include named imports of `Onboarding.js` and `OnboardingItem.js` / `OnboardingTag.js`  in your project
-
-
+The simplest approach — add an `id` to any element and reference it by string.
 
 ```jsx
-import {Onboarding} from 'reactjs-onboarding'
-import {OnboardingItem} from 'reactjs-onboarding'
-import {OnboardingTag} from 'reactjs-onboarding'
+import { Onboarding, OnboardingItem } from 'reactjs-onboarding';
+
+function App() {
+  return (
+    <>
+      <nav id="navbar">My App</nav>
+      <main id="dashboard">Dashboard content</main>
+
+      <Onboarding name="main-tour">
+        <OnboardingItem elementID="navbar" message="This is the navigation bar." />
+        <OnboardingItem elementID="dashboard" message="Here is your dashboard overview." />
+      </Onboarding>
+    </>
+  );
+}
 ```
 
+### 2. Target by DOM ref
 
-**2)** Create a state variable `visible` in the class and set it to false
-
-
+Pass a ref directly instead of a string ID.
 
 ```jsx
-state = { visible:false };
+import { useRef } from 'react';
+import { Onboarding, OnboardingItem } from 'reactjs-onboarding';
+
+function App() {
+  const btnRef = useRef(null);
+
+  return (
+    <>
+      <button ref={btnRef}>Settings</button>
+
+      <Onboarding name="settings-tour">
+        <OnboardingItem elementID={btnRef.current} message="Click here to open settings." />
+      </Onboarding>
+    </>
+  );
+}
 ```
 
+### 3. Target by coordinates
 
-**3)** Set `visible` parameter to true when you want the Onboarding to get called
-
-
-
-```jsx
-  this.setState({ visible: true })
-```
-
-
-**4)** Passing the coordinates
-
-
-* Give unique Id to the element that you want to point the arrow to
-
+Provide a manual bounding box `{ l, t, w, h }` (left, top, width, height in px).
 
 ```jsx
-<div id="example">
- Pass the co-ordinates by id
-</div>
-<Onboarding name="testing" visible={this.state.visible}>
-  <OnboardingItem elementID="example" message="This is the onborading message 1" />
+<Onboarding name="coord-tour">
+  <OnboardingItem
+    elementCoOrdinate={{ l: 100, t: 200, w: 150, h: 50 }}
+    message="This area is important."
+  />
 </Onboarding>
-
 ```
 
-* Give unique reference to the element you want to point the arrow to
+### 4. Wrap with OnboardingTag
 
+Wrap any element — no ID needed.
 
 ```jsx
-<div ref={(e) => this.reference = e}>
- Pass the co-ordinates by reference
-</div>
-<Onboarding name="testing" visible={this.state.visible}>
-  <OnboardingItem elementID={this.reference} message="This is the onboarding message 2" />
-</Onboarding>
+import { Onboarding, OnboardingTag } from 'reactjs-onboarding';
 
+function App() {
+  return (
+    <Onboarding name="tag-tour">
+      <OnboardingTag message="More options are here.">
+        <button>⋮</button>
+      </OnboardingTag>
+    </Onboarding>
+  );
+}
 ```
 
-* Give coordinates in the form of object of the area where you want to point the arrow to. l - left, t - top, w - width, h- height
+---
 
+## Restarting a Tour
+
+The tour auto-starts once and marks itself complete in `localStorage`. To replay it programmatically (e.g. a "Restart Tour" button):
 
 ```jsx
-<Onboarding name="testing" visible={this.state.visible}>
-  <OnboardingItem elementCoOrdinate={{ l: 100, t: 100, w: 100, h: 100 }} message="This is the onboarding message 3" />
-</Onboarding>
+import { Onboarding } from 'reactjs-onboarding';
 
+<button onClick={() => Onboarding.reset()}>Restart Tour</button>
 ```
 
-* Enclose the elements you want to highlight in an OnboardingTag
+---
 
+## Props
 
-```jsx
-<OnboardingTag message="More options via OnboardingTag">
- <IconButton id="options">
-   <MoreVertIcon />
- </IconButton>
-</OnboardingTag>
+### `<Onboarding>`
 
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| `name` | `string` | Yes | Unique tour identifier. Used as the `localStorage` key to track completion. |
 
+### `<OnboardingItem>`
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `elementID` | `string \| HTMLElement` | — | Target element by ID string or DOM reference. |
+| `elementCoOrdinate` | `{ l, t, w, h }` | — | Manual bounding box in pixels. Use when you can't add an ID. |
+| `message` | `string` | — | Text shown in the tooltip for this step. |
+| `disableArrow` | `boolean` | `false` | Hides the spotlight border around the target element. |
+
+> Provide either `elementID` or `elementCoOrdinate` per step, not both.
+
+### `<OnboardingTag>`
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `message` | `string` | Tooltip text for this step. |
+| `children` | `ReactNode` | The element to wrap and highlight. |
+
+---
+
+## Example App
+
+A full working demo using React 19 and MUI 7 is in the [`example/`](./example) folder.
+
+```bash
+# Build the library first
+npm run build
+
+# Then run the example
+cd example
+npm install
+npm run dev
 ```
+
+---
 
 ## Contributing
 
-
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
-Please make sure to update tests as appropriate.
-
+---
 
 ## License
 
-
-MIT � [](https://github.com/)
+MIT © [HyperDart](https://github.com/hyperdart)

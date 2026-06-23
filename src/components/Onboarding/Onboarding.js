@@ -121,6 +121,7 @@ class Onboarding extends Component {
             top: 0, left: 0, right: 0, bottom: 0,
             zIndex: 99999,
             cursor: 'pointer',
+            touchAction: 'pan-x pan-y',
           }}
           onClick={this.handleNext}
           role="dialog"

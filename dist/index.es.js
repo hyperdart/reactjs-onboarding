@@ -59,6 +59,13 @@ var possibleConstructorReturn = function (self, call) {
   return call && (typeof call === "object" || typeof call === "function") ? call : self;
 };
 
+var POSITION_TRANSITION = 'left 0.35s cubic-bezier(0.4,0,0.2,1), top 0.35s cubic-bezier(0.4,0,0.2,1), width 0.35s cubic-bezier(0.4,0,0.2,1), height 0.35s cubic-bezier(0.4,0,0.2,1)';
+var PADDING = 8; // breathing room around the highlighted element
+
+// Tracks the timer that re-enables position transitions after a fade-in completes.
+// Module-level so rapid setTarget calls don't stack timers.
+var _reEnableTimer = null;
+
 var _class = function _class() {
   classCallCheck(this, _class);
 };
@@ -72,11 +79,17 @@ _class.create = function () {
   div.style.position = 'fixed';
   div.style.pointerEvents = 'none';
   div.style.visibility = 'hidden';
-  // Lower than React root's overlay (99999) so the tooltip SVG/caret paints on top.
-  // onboarding-div is appended after the React root in DOM order, so at equal z-index
-  // it would win the paint race — keeping it one level lower prevents that.
+  div.style.opacity = '0';
   div.style.zIndex = '99998';
   document.getElementsByTagName('body')[0].appendChild(div);
+};
+
+_class.hide = function () {
+  if (typeof document === 'undefined') return;
+  var div = document.getElementById(CONSTANTS.ONBOARDING_DIV_ID);
+  if (!div) return;
+  div.style.transition = 'opacity 0.15s ease';
+  div.style.opacity = '0';
 };
 
 _class.setTarget = function (targetRect, disableArrow) {
@@ -84,13 +97,12 @@ _class.setTarget = function (targetRect, disableArrow) {
   var div = document.getElementById(CONSTANTS.ONBOARDING_DIV_ID);
   if (!div || !targetRect) return;
 
+  // Detect whether we're appearing from a hidden/faded state so we can
+  // snap to position first and fade in, rather than slide from 0,0.
+  var appearing = div.style.visibility === 'hidden' || parseFloat(div.style.opacity || '1') < 0.5;
+
   div.style.visibility = 'visible';
-  div.style.transition = 'left 0.35s cubic-bezier(0.4,0,0.2,1), top 0.35s cubic-bezier(0.4,0,0.2,1), width 0.35s cubic-bezier(0.4,0,0.2,1), height 0.35s cubic-bezier(0.4,0,0.2,1)';
   div.style.position = 'fixed';
-  div.style.left = targetRect.left + 'px';
-  div.style.top = targetRect.top + 'px';
-  div.style.width = targetRect.width + 'px';
-  div.style.height = targetRect.height + 'px';
   div.style.zIndex = '99998';
   div.style.boxShadow = '0 0 0 9999px rgba(0,0,0,0.68)';
 
@@ -101,13 +113,47 @@ _class.setTarget = function (targetRect, disableArrow) {
     div.style.border = 'none';
     div.style.borderRadius = '0';
   }
+
+  if (appearing) {
+    // Kill any pending re-enable timer from a previous appear cycle
+    clearTimeout(_reEnableTimer);
+
+    // Snap to the correct position instantly (no transition) while still invisible
+    div.style.transition = 'none';
+    div.style.opacity = '0';
+    div.style.left = targetRect.left - PADDING + 'px';
+    div.style.top = targetRect.top - PADDING + 'px';
+    div.style.width = targetRect.width + PADDING * 2 + 'px';
+    div.style.height = targetRect.height + PADDING * 2 + 'px';
+
+    // Next frame: fade in at the already-correct position
+    requestAnimationFrame(function () {
+      div.style.transition = 'opacity 0.22s ease';
+      div.style.opacity = '1';
+      // After fade-in completes, restore position transitions for normal step movement
+      _reEnableTimer = setTimeout(function () {
+        div.style.transition = POSITION_TRANSITION;
+      }, 220);
+    });
+  } else {
+    clearTimeout(_reEnableTimer);
+    div.style.transition = POSITION_TRANSITION;
+    div.style.opacity = '1';
+    div.style.left = targetRect.left - PADDING + 'px';
+    div.style.top = targetRect.top - PADDING + 'px';
+    div.style.width = targetRect.width + PADDING * 2 + 'px';
+    div.style.height = targetRect.height + PADDING * 2 + 'px';
+  }
 };
 
 _class.clear = function () {
   if (typeof document === 'undefined') return;
   var div = document.getElementById(CONSTANTS.ONBOARDING_DIV_ID);
   if (!div) return;
+  clearTimeout(_reEnableTimer);
+  div.style.transition = 'none';
   div.style.visibility = 'hidden';
+  div.style.opacity = '0';
   div.style.left = '0';
   div.style.top = '0';
   div.style.width = '0';
@@ -243,12 +289,34 @@ var OnboardingItem = function (_Component) {
     };
 
     _this._compute = function () {
+      // Don't update mid-scroll — let the timeout recompute once settled
+      if (_this._scrollingToTarget) return;
+
       var _this$props = _this.props,
           elementID = _this$props.elementID,
           elementCoOrdinate = _this$props.elementCoOrdinate;
 
 
       var el = typeof elementID === 'string' ? document.getElementById(elementID) : (typeof elementID === 'undefined' ? 'undefined' : _typeof(elementID)) === 'object' ? elementID : null;
+
+      // Scroll into view if the element is fully or partially outside the viewport.
+      if (el && el.getBoundingClientRect && !elementCoOrdinate) {
+        var r = el.getBoundingClientRect();
+        var vh = window.innerHeight;
+        var vw = window.innerWidth;
+        if (r.top < 0 || r.bottom > vh || r.left < 0 || r.right > vw) {
+          _this._scrollingToTarget = true;
+          _class.hide();
+          _this.setState({ ready: false });
+          el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+          clearTimeout(_this._scrollTimeout);
+          _this._scrollTimeout = setTimeout(function () {
+            _this._scrollingToTarget = false;
+            _this._compute();
+          }, 450);
+          return;
+        }
+      }
 
       var targetRect = null;
       if ((typeof elementCoOrdinate === 'undefined' ? 'undefined' : _typeof(elementCoOrdinate)) === 'object' && elementCoOrdinate !== null) {
@@ -283,6 +351,8 @@ var OnboardingItem = function (_Component) {
 
     _this.tooltipRef = React.createRef();
     _this._raf = null;
+    _this._scrollTimeout = null;
+    _this._scrollingToTarget = false;
     _this.state = { targetRect: null, pos: null, ready: false };
     return _this;
   }
@@ -300,11 +370,14 @@ var OnboardingItem = function (_Component) {
       window.removeEventListener('resize', this._schedule);
       window.removeEventListener('scroll', this._schedule);
       if (this._raf) cancelAnimationFrame(this._raf);
+      clearTimeout(this._scrollTimeout);
     }
   }, {
     key: 'componentDidUpdate',
     value: function componentDidUpdate(prevProps, prevState) {
       if (prevProps.elementID !== this.props.elementID || prevProps.elementCoOrdinate !== this.props.elementCoOrdinate) {
+        this._scrollingToTarget = false;
+        clearTimeout(this._scrollTimeout);
         this._compute();
         return;
       }
@@ -693,7 +766,8 @@ var Onboarding = function (_Component) {
             position: 'fixed',
             top: 0, left: 0, right: 0, bottom: 0,
             zIndex: 99999,
-            cursor: 'pointer'
+            cursor: 'pointer',
+            touchAction: 'pan-x pan-y'
           },
           onClick: this.handleNext,
           role: 'dialog',
