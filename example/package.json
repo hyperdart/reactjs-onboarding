@@ -1,23 +1,23 @@
 {
   "name": "reactjs-onboarding-example",
-  "homepage": "https://.github.io/reactjs-onboarding",
-  "version": "0.0.0",
-  "license": "MIT",
+  "version": "1.0.0",
   "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
   "dependencies": {
-    "@material-ui/core": "^4.3.3",
-    "@material-ui/icons": "^4.2.1",
-    "classnames": "^2.2.6",
-    "prop-types": "^15.6.2",
-    "react": "^16.4.1",
-    "react-dom": "^16.4.1",
-    "react-scripts": "^1.1.4",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "@mui/material": "^7.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
     "reactjs-onboarding": "file:.."
   },
-  "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test --env=jsdom",
-    "eject": "react-scripts eject"
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^6.3.5"
   }
 }
