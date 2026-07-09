@@ -3,6 +3,7 @@ import React, { Component, Fragment } from 'react';
 import CONSTANTS from './constants'
 import OnboardingDiv from './onboarding-div'
 import OnboardingTag from './OnboardingTag'
+import ScrollLock from './scroll-lock'
 
 // Z-index layers:
 //   onboarding-div  (dark spotlight)   99998
@@ -42,6 +43,18 @@ class Onboarding extends Component {
     document.removeEventListener('keydown', this._onKey);
     if (window.location.href !== this._mountedHref) {
       OnboardingDiv.clear();
+    }
+    if (this.state.open) ScrollLock.unlock();
+  }
+
+  // Prevents the user from scrolling the page behind the tour so the
+  // highlighted element can't drift out of the spotlight while a step is
+  // showing. Doesn't touch scrollbar/overflow CSS, so it never conflicts
+  // with OnboardingItem's own programmatic scrollIntoView between steps.
+  componentDidUpdate(prevProps, prevState) {
+    if (prevState.open !== this.state.open) {
+      if (this.state.open) ScrollLock.lock();
+      else ScrollLock.unlock();
     }
   }
 
