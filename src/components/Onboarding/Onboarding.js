@@ -49,8 +49,8 @@ class Onboarding extends Component {
 
   // Prevents the user from scrolling the page behind the tour so the
   // highlighted element can't drift out of the spotlight while a step is
-  // showing. Doesn't touch scrollbar/overflow CSS, so it never conflicts
-  // with OnboardingItem's own programmatic scrollIntoView between steps.
+  // showing. Locks via overflow:hidden (see scroll-lock.js) which still
+  // permits OnboardingItem's own programmatic scrollIntoView between steps.
   componentDidUpdate(prevProps, prevState) {
     if (prevState.open !== this.state.open) {
       if (this.state.open) ScrollLock.lock();

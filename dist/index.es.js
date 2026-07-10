@@ -647,15 +647,22 @@ function OnboardingTag(_ref) {
 
 OnboardingTag.TagItems = _tagItems;
 
-// Blocks user-initiated scrolling (wheel, touch drag, keyboard) while the
-// tour is open, without touching overflow/scrollbar CSS — toggling that
-// makes the scrollbar appear/disappear and the page reflow/shift, which
-// looks like a shake. Programmatic scrolling (Element.scrollIntoView,
-// window.scrollTo, etc.) doesn't fire these events, so it stays unaffected.
-// Known gap: scrollbar-thumb dragging and middle-click autoscroll panning
-// aren't intercepted by any of the events below, so they still scroll the
-// page — covering them would mean snapping scroll position on every
-// 'scroll' event, which would fight OnboardingItem's own scrollIntoView.
+// Blocks user-initiated scrolling while the tour is open.
+//
+// wheel/touchmove/keydown are intercepted directly since they're the source
+// events for scrolling anywhere on the page, including nested scrollable
+// containers. Programmatic scrolling (Element.scrollIntoView, window.scrollTo,
+// etc.) doesn't fire these events, so it stays unaffected.
+//
+// The page's own scrollbar can't be blocked that way — dragging the thumb
+// (or middle-click autoscroll) fires 'scroll' directly with no preventable
+// source event. Instead we remove the document's ability to scroll at all via
+// `overflow: hidden` on <html>/<body>. Per the CSS Overflow spec, `hidden`
+// disables scrollbars and user-generated scrolling but the box remains a
+// scroll container for *programmatic* scrolling — so OnboardingItem's
+// scrollIntoView still works while locked. Removing the scrollbar shrinks the
+// content area by its width, which reads as a page "shake"; a matching
+// `padding-right` on <body> reserves that space back so nothing shifts.
 var SCROLL_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'PageUp', 'PageDown', 'Home', 'End', ' ']);
 
 // Elements that use these keys themselves (button activation, text editing,
@@ -679,6 +686,33 @@ function preventScrollKey(e) {
 // instance's unlock() clear the lock while another is still relying on it.
 var _refCount = 0;
 
+var _htmlOverflow = '';
+var _bodyOverflow = '';
+var _bodyPaddingRight = '';
+
+function lockOverflow() {
+  var html = document.documentElement;
+  var body = document.body;
+  var scrollbarWidth = window.innerWidth - html.clientWidth;
+
+  _htmlOverflow = html.style.overflow;
+  _bodyOverflow = body.style.overflow;
+  _bodyPaddingRight = body.style.paddingRight;
+
+  if (scrollbarWidth > 0) {
+    var currentPaddingRight = parseFloat(window.getComputedStyle(body).paddingRight) || 0;
+    body.style.paddingRight = currentPaddingRight + scrollbarWidth + 'px';
+  }
+  html.style.overflow = 'hidden';
+  body.style.overflow = 'hidden';
+}
+
+function unlockOverflow() {
+  document.documentElement.style.overflow = _htmlOverflow;
+  document.body.style.overflow = _bodyOverflow;
+  document.body.style.paddingRight = _bodyPaddingRight;
+}
+
 var ScrollLock = function ScrollLock() {
   classCallCheck(this, ScrollLock);
 };
@@ -687,6 +721,7 @@ ScrollLock.lock = function () {
   if (typeof document === 'undefined') return;
   _refCount++;
   if (_refCount > 1) return;
+  lockOverflow();
   document.addEventListener('wheel', preventDefault, { passive: false });
   document.addEventListener('touchmove', preventDefault, { passive: false });
   document.addEventListener('keydown', preventScrollKey, { passive: false });
@@ -696,6 +731,7 @@ ScrollLock.unlock = function () {
   if (typeof document === 'undefined' || _refCount === 0) return;
   _refCount--;
   if (_refCount > 0) return;
+  unlockOverflow();
   document.removeEventListener('wheel', preventDefault);
   document.removeEventListener('touchmove', preventDefault);
   document.removeEventListener('keydown', preventScrollKey);
@@ -787,8 +823,8 @@ var Onboarding = function (_Component) {
 
     // Prevents the user from scrolling the page behind the tour so the
     // highlighted element can't drift out of the spotlight while a step is
-    // showing. Doesn't touch scrollbar/overflow CSS, so it never conflicts
-    // with OnboardingItem's own programmatic scrollIntoView between steps.
+    // showing. Locks via overflow:hidden (see scroll-lock.js) which still
+    // permits OnboardingItem's own programmatic scrollIntoView between steps.
 
   }, {
     key: 'componentDidUpdate',
