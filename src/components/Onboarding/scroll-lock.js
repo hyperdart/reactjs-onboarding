@@ -40,6 +40,8 @@ let _refCount = 0;
 let _htmlOverflow = '';
 let _bodyOverflow = '';
 let _bodyPaddingRight = '';
+let _scrollX = 0;
+let _scrollY = 0;
 
 function lockOverflow() {
   const html = document.documentElement;
@@ -49,6 +51,12 @@ function lockOverflow() {
   _htmlOverflow = html.style.overflow;
   _bodyOverflow = body.style.overflow;
   _bodyPaddingRight = body.style.paddingRight;
+  // OnboardingItem scrolls the page to bring each step's target into view, so by
+  // the time the tour closes the page usually isn't where the user started —
+  // most noticeably on narrow/mobile layouts where more steps need scrolling.
+  // Save the pre-tour position so unlockOverflow() can put the user back.
+  _scrollX = window.scrollX;
+  _scrollY = window.scrollY;
 
   if (scrollbarWidth > 0) {
     const currentPaddingRight = parseFloat(window.getComputedStyle(body).paddingRight) || 0;
@@ -62,6 +70,7 @@ function unlockOverflow() {
   document.documentElement.style.overflow = _htmlOverflow;
   document.body.style.overflow = _bodyOverflow;
   document.body.style.paddingRight = _bodyPaddingRight;
+  window.scrollTo(_scrollX, _scrollY);
 }
 
 export default class ScrollLock {
