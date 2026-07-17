@@ -681,11 +681,15 @@ function isInteractive(target) {
 }
 
 function preventDefault(e) {
-  e.preventDefault();
+  if (e.cancelable) {
+    e.preventDefault();
+  }
 }
 
 function preventScrollKey(e) {
-  if (SCROLL_KEYS.has(e.key) && !isInteractive(e.target)) e.preventDefault();
+  if (SCROLL_KEYS.has(e.key) && !isInteractive(e.target) && e.cancelable) {
+    e.preventDefault();
+  }
 }
 
 // Ref-counted so that multiple <Onboarding> instances open at once (e.g.
@@ -698,11 +702,22 @@ var _bodyOverflow = '';
 var _bodyPaddingRight = '';
 var _scrollX = 0;
 var _scrollY = 0;
+var _usedOverflowLock = false;
 
 function lockOverflow() {
   var html = document.documentElement;
   var body = document.body;
   var scrollbarWidth = window.innerWidth - html.clientWidth;
+
+  // Elegantly skip the CSS overflow lock if the scrollbar doesn't take up physical space 
+  // (e.g. mobile devices and macOS overlay scrollbars). This natively prevents the iOS Safari 
+  // scrollIntoView bugs from occuring without requiring any brittle device detection.
+  if (scrollbarWidth === 0) {
+    _usedOverflowLock = false;
+    return;
+  }
+
+  _usedOverflowLock = true;
 
   _htmlOverflow = html.style.overflow;
   _bodyOverflow = body.style.overflow;
@@ -714,19 +729,25 @@ function lockOverflow() {
   _scrollX = window.scrollX;
   _scrollY = window.scrollY;
 
-  if (scrollbarWidth > 0) {
-    var currentPaddingRight = parseFloat(window.getComputedStyle(body).paddingRight) || 0;
-    body.style.paddingRight = currentPaddingRight + scrollbarWidth + 'px';
-  }
+  var currentPaddingRight = parseFloat(window.getComputedStyle(body).paddingRight) || 0;
+  body.style.paddingRight = currentPaddingRight + scrollbarWidth + 'px';
+
   html.style.overflow = 'hidden';
   body.style.overflow = 'hidden';
 }
 
 function unlockOverflow() {
+  if (!_usedOverflowLock) return;
+
   document.documentElement.style.overflow = _htmlOverflow;
   document.body.style.overflow = _bodyOverflow;
   document.body.style.paddingRight = _bodyPaddingRight;
   window.scrollTo(_scrollX, _scrollY);
+
+  // Clean up
+  _htmlOverflow = '';
+  _bodyOverflow = '';
+  _bodyPaddingRight = '';
 }
 
 var ScrollLock = function ScrollLock() {
