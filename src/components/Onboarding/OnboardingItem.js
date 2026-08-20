@@ -87,8 +87,9 @@ class OnboardingItem extends Component {
     super(props);
     this.tooltipRef = React.createRef();
     this._raf = null;
-    this._scrollTimeout = null;
-    this._scrollingToTarget = false;
+    this._pollRaf = null;
+    this._polling = false;
+    this._resolvedFor = null; // element that already had its one scroll-and-settle attempt — see _pollUntilUsable
     this.state = { targetRect: null, pos: null, ready: false };
   }
 
@@ -102,7 +103,7 @@ class OnboardingItem extends Component {
     window.removeEventListener('resize', this._schedule);
     window.removeEventListener('scroll', this._schedule);
     if (this._raf) cancelAnimationFrame(this._raf);
-    clearTimeout(this._scrollTimeout);
+    if (this._pollRaf) cancelAnimationFrame(this._pollRaf);
   }
 
   componentDidUpdate(prevProps, prevState) {
@@ -110,8 +111,9 @@ class OnboardingItem extends Component {
       prevProps.elementID !== this.props.elementID ||
       prevProps.elementCoOrdinate !== this.props.elementCoOrdinate
     ) {
-      this._scrollingToTarget = false;
-      clearTimeout(this._scrollTimeout);
+      this._polling = false;
+      this._resolvedFor = null;
+      if (this._pollRaf) cancelAnimationFrame(this._pollRaf);
       this._compute();
       return;
     }
@@ -120,14 +122,33 @@ class OnboardingItem extends Component {
     }
   }
 
+  _setReady = (ready) => {
+    if (this.props._onReady) this.props._onReady(ready);
+    this.setState({ ready });
+  }
+
   _schedule = () => {
     if (this._raf) cancelAnimationFrame(this._raf);
     this._raf = requestAnimationFrame(this._compute);
   }
 
+  // A target isn't usable yet if it has no size (display:none, not yet laid
+  // out). Revealing the tooltip against a 0x0 rect just shows it in the
+  // wrong place, which reads as "the dialog never appeared."
+  _hasSize = (rect) => rect.width > 0 || rect.height > 0;
+
+  // Whether the target is fully inside the viewport. This drives *whether to
+  // scroll* — scroll (and center) whenever any part is cut off, same as
+  // bringing a partially-visible element fully into view. It must NOT be
+  // used as the condition for *when the wait is over* (see _pollUntilUsable):
+  // an element taller or wider than the viewport can never be fully
+  // contained, so that would wait for something that can never happen.
+  _notFullyContained = (rect) => (
+    rect.top < 0 || rect.left < 0 || rect.bottom > window.innerHeight || rect.right > window.innerWidth
+  )
+
   _compute = () => {
-    // Don't update mid-scroll — let the timeout recompute once settled
-    if (this._scrollingToTarget) return;
+    if (this._polling) return; // the in-flight poll will recompute once done
 
     const { elementID, elementCoOrdinate } = this.props;
 
@@ -135,21 +156,10 @@ class OnboardingItem extends Component {
       ? document.getElementById(elementID)
       : (typeof elementID === 'object' ? elementID : null);
 
-    // Scroll into view if the element is fully or partially outside the viewport.
-    if (el && el.getBoundingClientRect && !elementCoOrdinate) {
-      const r = el.getBoundingClientRect();
-      const vh = window.innerHeight;
-      const vw = window.innerWidth;
-      if (r.top < 0 || r.bottom > vh || r.left < 0 || r.right > vw) {
-        this._scrollingToTarget = true;
-        OnboardingDiv.hide();
-        this.setState({ ready: false });
-        el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
-        clearTimeout(this._scrollTimeout);
-        this._scrollTimeout = setTimeout(() => {
-          this._scrollingToTarget = false;
-          this._compute();
-        }, 450);
+    if (el && el.getBoundingClientRect && !elementCoOrdinate && el !== this._resolvedFor) {
+      const rect = el.getBoundingClientRect();
+      if (!this._hasSize(rect) || this._notFullyContained(rect)) {
+        this._pollUntilUsable(el);
         return;
       }
     }
@@ -166,7 +176,8 @@ class OnboardingItem extends Component {
     OnboardingDiv.setTarget(targetRect, this.props.disableArrow);
 
     if (!targetRect) {
-      this.setState({ targetRect: null, pos: null, ready: true });
+      this.setState({ targetRect: null, pos: null });
+      this._setReady(true);
       return;
     }
 
@@ -176,7 +187,65 @@ class OnboardingItem extends Component {
       : 140;
 
     const pos = bestPlacement(targetRect, tooltipH);
-    this.setState({ targetRect, pos, ready: true });
+    this.setState({ targetRect, pos });
+    this._setReady(true);
+  }
+
+  // Scrolls the target into view (once) if any part of it is cut off, then
+  // waits until it stops moving before revealing the tooltip — instead of
+  // guessing a fixed delay, which races against variable-length scroll
+  // animations (notably Android Chrome, where the URL bar collapsing during
+  // scroll keeps shifting window.innerHeight past any short guess, so a
+  // too-early recheck sees the same not-yet-scrolled target and loops).
+  //
+  // "Stopped moving" — not "fully contained" — is what ends the wait: a
+  // target taller or wider than the viewport can never be fully contained,
+  // so that could never be satisfied and would wait out the full safety cap
+  // on every single visit to that step. Once this poll ends (settled or
+  // capped), _resolvedFor marks the element so _compute won't re-trigger
+  // this same wait for it again — it just repositions directly from here on.
+  _pollUntilUsable = (el) => {
+    if (this._pollRaf) cancelAnimationFrame(this._pollRaf);
+    this._polling = true;
+    OnboardingDiv.hide();
+    this._setReady(false);
+
+    const STABLE_FRAMES_NEEDED = 4;
+    const MAX_WAIT_MS = 1500;
+    const EPSILON = 0.5;
+    const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
+
+    const start = now();
+    let prevRect = el.getBoundingClientRect();
+    let stableFrames = 0;
+    let scrolledIntoView = false;
+
+    const step = () => {
+      const rect = el.getBoundingClientRect();
+      const hasSize = this._hasSize(rect);
+
+      if (hasSize && !scrolledIntoView && this._notFullyContained(rect)) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+        scrolledIntoView = true;
+      }
+
+      const stable = Math.abs(rect.top - prevRect.top) < EPSILON && Math.abs(rect.left - prevRect.left) < EPSILON;
+      stableFrames = (hasSize && stable) ? stableFrames + 1 : 0;
+      prevRect = rect;
+
+      const timedOut = now() - start > MAX_WAIT_MS;
+
+      if (stableFrames >= STABLE_FRAMES_NEEDED || timedOut) {
+        this._pollRaf = null;
+        this._polling = false;
+        this._resolvedFor = el;
+        this._compute();
+        return;
+      }
+      this._pollRaf = requestAnimationFrame(step);
+    };
+
+    this._pollRaf = requestAnimationFrame(step);
   }
 
   render() {
@@ -195,6 +264,9 @@ class OnboardingItem extends Component {
           width: TW,
           zIndex: 100000,
           opacity: ready ? 1 : 0,
+          // Invisible tooltip (mid scroll-settle) must not eat clicks meant
+          // for the full-screen overlay behind it.
+          pointerEvents: ready ? 'auto' : 'none',
           transition: 'opacity 0.18s ease',
           // Smooth relocation when target changes between steps
           willChange: 'top, left',
@@ -208,6 +280,7 @@ class OnboardingItem extends Component {
           width: TW,
           zIndex: 100000,
           opacity: ready ? 1 : 0,
+          pointerEvents: ready ? 'auto' : 'none',
           transition: 'opacity 0.18s ease',
         };
 

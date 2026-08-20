@@ -290,14 +290,26 @@ var OnboardingItem = function (_Component) {
 
     var _this = possibleConstructorReturn(this, (OnboardingItem.__proto__ || Object.getPrototypeOf(OnboardingItem)).call(this, props));
 
+    _this._setReady = function (ready) {
+      if (_this.props._onReady) _this.props._onReady(ready);
+      _this.setState({ ready: ready });
+    };
+
     _this._schedule = function () {
       if (_this._raf) cancelAnimationFrame(_this._raf);
       _this._raf = requestAnimationFrame(_this._compute);
     };
 
+    _this._hasSize = function (rect) {
+      return rect.width > 0 || rect.height > 0;
+    };
+
+    _this._notFullyContained = function (rect) {
+      return rect.top < 0 || rect.left < 0 || rect.bottom > window.innerHeight || rect.right > window.innerWidth;
+    };
+
     _this._compute = function () {
-      // Don't update mid-scroll — let the timeout recompute once settled
-      if (_this._scrollingToTarget) return;
+      if (_this._polling) return; // the in-flight poll will recompute once done
 
       var _this$props = _this.props,
           elementID = _this$props.elementID,
@@ -306,21 +318,10 @@ var OnboardingItem = function (_Component) {
 
       var el = typeof elementID === 'string' ? document.getElementById(elementID) : (typeof elementID === 'undefined' ? 'undefined' : _typeof(elementID)) === 'object' ? elementID : null;
 
-      // Scroll into view if the element is fully or partially outside the viewport.
-      if (el && el.getBoundingClientRect && !elementCoOrdinate) {
-        var r = el.getBoundingClientRect();
-        var vh = window.innerHeight;
-        var vw = window.innerWidth;
-        if (r.top < 0 || r.bottom > vh || r.left < 0 || r.right > vw) {
-          _this._scrollingToTarget = true;
-          _class.hide();
-          _this.setState({ ready: false });
-          el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
-          clearTimeout(_this._scrollTimeout);
-          _this._scrollTimeout = setTimeout(function () {
-            _this._scrollingToTarget = false;
-            _this._compute();
-          }, 450);
+      if (el && el.getBoundingClientRect && !elementCoOrdinate && el !== _this._resolvedFor) {
+        var rect = el.getBoundingClientRect();
+        if (!_this._hasSize(rect) || _this._notFullyContained(rect)) {
+          _this._pollUntilUsable(el);
           return;
         }
       }
@@ -345,7 +346,8 @@ var OnboardingItem = function (_Component) {
       _class.setTarget(targetRect, _this.props.disableArrow);
 
       if (!targetRect) {
-        _this.setState({ targetRect: null, pos: null, ready: true });
+        _this.setState({ targetRect: null, pos: null });
+        _this._setReady(true);
         return;
       }
 
@@ -353,13 +355,61 @@ var OnboardingItem = function (_Component) {
       var tooltipH = _this.tooltipRef.current ? _this.tooltipRef.current.offsetHeight : 140;
 
       var pos = bestPlacement(targetRect, tooltipH);
-      _this.setState({ targetRect: targetRect, pos: pos, ready: true });
+      _this.setState({ targetRect: targetRect, pos: pos });
+      _this._setReady(true);
+    };
+
+    _this._pollUntilUsable = function (el) {
+      if (_this._pollRaf) cancelAnimationFrame(_this._pollRaf);
+      _this._polling = true;
+      _class.hide();
+      _this._setReady(false);
+
+      var STABLE_FRAMES_NEEDED = 4;
+      var MAX_WAIT_MS = 1500;
+      var EPSILON = 0.5;
+      var now = function now() {
+        return typeof performance !== 'undefined' ? performance.now() : Date.now();
+      };
+
+      var start = now();
+      var prevRect = el.getBoundingClientRect();
+      var stableFrames = 0;
+      var scrolledIntoView = false;
+
+      var step = function step() {
+        var rect = el.getBoundingClientRect();
+        var hasSize = _this._hasSize(rect);
+
+        if (hasSize && !scrolledIntoView && _this._notFullyContained(rect)) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+          scrolledIntoView = true;
+        }
+
+        var stable = Math.abs(rect.top - prevRect.top) < EPSILON && Math.abs(rect.left - prevRect.left) < EPSILON;
+        stableFrames = hasSize && stable ? stableFrames + 1 : 0;
+        prevRect = rect;
+
+        var timedOut = now() - start > MAX_WAIT_MS;
+
+        if (stableFrames >= STABLE_FRAMES_NEEDED || timedOut) {
+          _this._pollRaf = null;
+          _this._polling = false;
+          _this._resolvedFor = el;
+          _this._compute();
+          return;
+        }
+        _this._pollRaf = requestAnimationFrame(step);
+      };
+
+      _this._pollRaf = requestAnimationFrame(step);
     };
 
     _this.tooltipRef = React__default.createRef();
     _this._raf = null;
-    _this._scrollTimeout = null;
-    _this._scrollingToTarget = false;
+    _this._pollRaf = null;
+    _this._polling = false;
+    _this._resolvedFor = null; // element that already had its one scroll-and-settle attempt — see _pollUntilUsable
     _this.state = { targetRect: null, pos: null, ready: false };
     return _this;
   }
@@ -377,14 +427,15 @@ var OnboardingItem = function (_Component) {
       window.removeEventListener('resize', this._schedule);
       window.removeEventListener('scroll', this._schedule);
       if (this._raf) cancelAnimationFrame(this._raf);
-      clearTimeout(this._scrollTimeout);
+      if (this._pollRaf) cancelAnimationFrame(this._pollRaf);
     }
   }, {
     key: 'componentDidUpdate',
     value: function componentDidUpdate(prevProps, prevState) {
       if (prevProps.elementID !== this.props.elementID || prevProps.elementCoOrdinate !== this.props.elementCoOrdinate) {
-        this._scrollingToTarget = false;
-        clearTimeout(this._scrollTimeout);
+        this._polling = false;
+        this._resolvedFor = null;
+        if (this._pollRaf) cancelAnimationFrame(this._pollRaf);
         this._compute();
         return;
       }
@@ -392,6 +443,34 @@ var OnboardingItem = function (_Component) {
         _class.setTarget(this.state.targetRect, this.props.disableArrow);
       }
     }
+
+    // A target isn't usable yet if it has no size (display:none, not yet laid
+    // out). Revealing the tooltip against a 0x0 rect just shows it in the
+    // wrong place, which reads as "the dialog never appeared."
+
+
+    // Whether the target is fully inside the viewport. This drives *whether to
+    // scroll* — scroll (and center) whenever any part is cut off, same as
+    // bringing a partially-visible element fully into view. It must NOT be
+    // used as the condition for *when the wait is over* (see _pollUntilUsable):
+    // an element taller or wider than the viewport can never be fully
+    // contained, so that would wait for something that can never happen.
+
+
+    // Scrolls the target into view (once) if any part of it is cut off, then
+    // waits until it stops moving before revealing the tooltip — instead of
+    // guessing a fixed delay, which races against variable-length scroll
+    // animations (notably Android Chrome, where the URL bar collapsing during
+    // scroll keeps shifting window.innerHeight past any short guess, so a
+    // too-early recheck sees the same not-yet-scrolled target and loops).
+    //
+    // "Stopped moving" — not "fully contained" — is what ends the wait: a
+    // target taller or wider than the viewport can never be fully contained,
+    // so that could never be satisfied and would wait out the full safety cap
+    // on every single visit to that step. Once this poll ends (settled or
+    // capped), _resolvedFor marks the element so _compute won't re-trigger
+    // this same wait for it again — it just repositions directly from here on.
+
   }, {
     key: 'render',
     value: function render() {
@@ -421,6 +500,9 @@ var OnboardingItem = function (_Component) {
         width: TW,
         zIndex: 100000,
         opacity: ready ? 1 : 0,
+        // Invisible tooltip (mid scroll-settle) must not eat clicks meant
+        // for the full-screen overlay behind it.
+        pointerEvents: ready ? 'auto' : 'none',
         transition: 'opacity 0.18s ease',
         // Smooth relocation when target changes between steps
         willChange: 'top, left'
@@ -433,6 +515,7 @@ var OnboardingItem = function (_Component) {
         width: TW,
         zIndex: 100000,
         opacity: ready ? 1 : 0,
+        pointerEvents: ready ? 'auto' : 'none',
         transition: 'opacity 0.18s ease'
       };
 
@@ -801,25 +884,63 @@ var Onboarding = function (_Component) {
     };
 
     _this._getChildArray = function () {
-      var filtered = React__default.Children.toArray(_this.props.children).filter(function (child) {
+      var all = React__default.Children.toArray(_this.props.children);
+      var filtered = all.filter(function (child) {
         var id = child.props && child.props.elementID;
         if (typeof id === 'string') return document.getElementById(id) !== null;
         return true;
       });
+      // A step's target can mount asynchronously (lazy content, slow hydration)
+      // after this render already ran. Filtering it out here is a one-shot
+      // check — without a retry it's silently and permanently dropped from
+      // the tour rather than picked up once it exists.
+      if (filtered.length < all.length) _this._scheduleChildRetry();
       return filtered.concat(OnboardingTag.TagItems);
+    };
+
+    _this._scheduleChildRetry = function () {
+      if (_this._retryRaf) return;
+      _this._retryStart = typeof performance !== 'undefined' ? performance.now() : Date.now();
+      var MAX_WAIT_MS = 1500;
+
+      var poll = function poll() {
+        if (!_this.state.open) {
+          _this._retryRaf = null;return;
+        }
+
+        var all = React__default.Children.toArray(_this.props.children);
+        var resolvedCount = all.filter(function (child) {
+          var id = child.props && child.props.elementID;
+          return typeof id !== 'string' || document.getElementById(id) !== null;
+        }).length;
+
+        var now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+        if (resolvedCount === all.length || now - _this._retryStart > MAX_WAIT_MS) {
+          _this._retryRaf = null;
+          _this.forceUpdate();
+          return;
+        }
+        _this._retryRaf = requestAnimationFrame(poll);
+      };
+
+      _this._retryRaf = requestAnimationFrame(poll);
     };
 
     _this.handleNext = function () {
       var total = _this._getChildArray().length;
       if (_this.state.activeStep >= total - 1) _this.handleClose();else _this.setState(function (s) {
-        return { activeStep: s.activeStep + 1 };
+        return { activeStep: s.activeStep + 1, ready: false };
       });
     };
 
     _this.handleBack = function () {
       if (_this.state.activeStep > 0) _this.setState(function (s) {
-        return { activeStep: s.activeStep - 1 };
+        return { activeStep: s.activeStep - 1, ready: false };
       });
+    };
+
+    _this._setReady = function (ready) {
+      _this.setState({ ready: ready });
     };
 
     Onboarding.current = _this;
@@ -828,9 +949,17 @@ var Onboarding = function (_Component) {
     // hydration mismatches in Next.js / React Server Components environments.
     _this.state = {
       activeStep: 0,
-      open: false
+      open: false,
+      // Gates the full-screen overlay's click-to-advance behavior. Must stay
+      // false until the active child reports itself visible via _onReady —
+      // otherwise a tooltip stuck invisible (e.g. mid scroll-settle) leaves
+      // a fully interactive, invisible overlay that silently completes the
+      // tour on tap (see onboarding-div.js / OnboardingItem.js).
+      ready: false
     };
     _this._mountedHref = '';
+    _this._retryRaf = null;
+    _this._retryStart = null;
     return _this;
   }
 
@@ -856,6 +985,7 @@ var Onboarding = function (_Component) {
         _class.clear();
       }
       if (this.state.open) ScrollLock.unlock();
+      if (this._retryRaf) cancelAnimationFrame(this._retryRaf);
     }
 
     // Prevents the user from scrolling the page behind the tour so the
@@ -875,7 +1005,8 @@ var Onboarding = function (_Component) {
     value: function render() {
       var _state = this.state,
           open = _state.open,
-          activeStep = _state.activeStep;
+          activeStep = _state.activeStep,
+          ready = _state.ready;
 
       if (!open) return null;
 
@@ -896,7 +1027,8 @@ var Onboarding = function (_Component) {
         _step: step,
         _total: total,
         _isFirst: isFirst,
-        _isLast: isLast
+        _isLast: isLast,
+        _onReady: this._setReady
       });
 
       return React__default.createElement(
@@ -907,10 +1039,14 @@ var Onboarding = function (_Component) {
             position: 'fixed',
             top: 0, left: 0, right: 0, bottom: 0,
             zIndex: 99999,
-            cursor: 'pointer',
-            touchAction: 'pan-x pan-y'
+            cursor: ready ? 'pointer' : 'default',
+            touchAction: 'pan-x pan-y',
+            // Android shows a translucent tap-highlight flash on any element
+            // with an onClick unless this is suppressed — visible as a "blue
+            // flicker" across the full screen on every tap here.
+            WebkitTapHighlightColor: 'transparent'
           },
-          onClick: this.handleNext,
+          onClick: ready ? this.handleNext : undefined,
           role: 'dialog',
           'aria-modal': 'true',
           'aria-label': 'Onboarding tour'

@@ -22,8 +22,16 @@ class Onboarding extends Component {
     this.state = {
       activeStep: 0,
       open: false,
+      // Gates the full-screen overlay's click-to-advance behavior. Must stay
+      // false until the active child reports itself visible via _onReady —
+      // otherwise a tooltip stuck invisible (e.g. mid scroll-settle) leaves
+      // a fully interactive, invisible overlay that silently completes the
+      // tour on tap (see onboarding-div.js / OnboardingItem.js).
+      ready: false,
     };
     this._mountedHref = '';
+    this._retryRaf = null;
+    this._retryStart = null;
   }
 
   componentDidMount() {
@@ -45,6 +53,7 @@ class Onboarding extends Component {
       OnboardingDiv.clear();
     }
     if (this.state.open) ScrollLock.unlock();
+    if (this._retryRaf) cancelAnimationFrame(this._retryRaf);
   }
 
   // Prevents the user from scrolling the page behind the tour so the
@@ -81,27 +90,63 @@ class Onboarding extends Component {
   }
 
   _getChildArray = () => {
-    const filtered = React.Children.toArray(this.props.children).filter(child => {
+    const all = React.Children.toArray(this.props.children);
+    const filtered = all.filter(child => {
       const id = child.props && child.props.elementID;
       if (typeof id === 'string') return document.getElementById(id) !== null;
       return true;
     });
+    // A step's target can mount asynchronously (lazy content, slow hydration)
+    // after this render already ran. Filtering it out here is a one-shot
+    // check — without a retry it's silently and permanently dropped from
+    // the tour rather than picked up once it exists.
+    if (filtered.length < all.length) this._scheduleChildRetry();
     return filtered.concat(OnboardingTag.TagItems);
+  }
+
+  _scheduleChildRetry = () => {
+    if (this._retryRaf) return;
+    this._retryStart = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    const MAX_WAIT_MS = 1500;
+
+    const poll = () => {
+      if (!this.state.open) { this._retryRaf = null; return; }
+
+      const all = React.Children.toArray(this.props.children);
+      const resolvedCount = all.filter(child => {
+        const id = child.props && child.props.elementID;
+        return typeof id !== 'string' || document.getElementById(id) !== null;
+      }).length;
+
+      const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+      if (resolvedCount === all.length || now - this._retryStart > MAX_WAIT_MS) {
+        this._retryRaf = null;
+        this.forceUpdate();
+        return;
+      }
+      this._retryRaf = requestAnimationFrame(poll);
+    };
+
+    this._retryRaf = requestAnimationFrame(poll);
   }
 
   handleNext = () => {
     const total = this._getChildArray().length;
     if (this.state.activeStep >= total - 1) this.handleClose();
-    else this.setState(s => ({ activeStep: s.activeStep + 1 }));
+    else this.setState(s => ({ activeStep: s.activeStep + 1, ready: false }));
   }
 
   handleBack = () => {
     if (this.state.activeStep > 0)
-      this.setState(s => ({ activeStep: s.activeStep - 1 }));
+      this.setState(s => ({ activeStep: s.activeStep - 1, ready: false }));
+  }
+
+  _setReady = (ready) => {
+    this.setState({ ready });
   }
 
   render() {
-    const { open, activeStep } = this.state;
+    const { open, activeStep, ready } = this.state;
     if (!open) return null;
 
     const children = this._getChildArray();
@@ -122,21 +167,29 @@ class Onboarding extends Component {
       _total: total,
       _isFirst: isFirst,
       _isLast: isLast,
+      _onReady: this._setReady,
     });
 
     return (
       <Fragment>
         {/* Full-screen overlay — blocks interaction with underlying page.
-            Clicking the dark area advances the tour (like a slide presentation). */}
+            Clicking the dark area advances the tour (like a slide presentation).
+            Click-to-advance only fires once the active step has confirmed it's
+            actually visible (ready) — otherwise this element still blocks the
+            page but silently eats clicks instead of skipping steps blind. */}
         <div
           style={{
             position: 'fixed',
             top: 0, left: 0, right: 0, bottom: 0,
             zIndex: 99999,
-            cursor: 'pointer',
+            cursor: ready ? 'pointer' : 'default',
             touchAction: 'pan-x pan-y',
+            // Android shows a translucent tap-highlight flash on any element
+            // with an onClick unless this is suppressed — visible as a "blue
+            // flicker" across the full screen on every tap here.
+            WebkitTapHighlightColor: 'transparent',
           }}
-          onClick={this.handleNext}
+          onClick={ready ? this.handleNext : undefined}
           role="dialog"
           aria-modal="true"
           aria-label="Onboarding tour"
